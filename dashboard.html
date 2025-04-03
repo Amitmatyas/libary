@@ -290,15 +290,15 @@
         const auth = firebase.auth();
         const firestore = firebase.firestore();
 
-        function logout() {
-            auth.signOut().then(() => {
-                console.log('התנתקות בוצעה בהצלחה');
-                window.location.href = 'index.html';
-            }).catch((error) => {
-                console.error('שגיאה בהתנתקות:', error);
-                alert('אירעה שגיאה בהתנתקות.');
-            });
-        }
+       function logout() {
+    auth.signOut().then(() => {
+        console.log('התנתקות בוצעה בהצלחה');
+        window.location.href = 'index.html';
+    }).catch((error) => {
+        console.error('שגיאה בהתנתקות:', error);
+        alert('אירעה שגיאה בהתנתקות.');
+    });
+}
 
         function generateSerialNumber() {
             const min = 1000000;
