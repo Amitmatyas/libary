@@ -360,7 +360,7 @@
                 let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
                 snapshot.forEach(doc => {
                     const bookData = doc.data();
-                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{bookData.name}</td></tr>`;
+                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{name}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 contentArea.innerHTML = html;
@@ -381,7 +381,7 @@
                     const bookData = doc.data();
                     contentArea.innerHTML = `
                         <h2>פרטי ספר</h2>
-                        <p><b>שם הספר:</b> ${bookData.name}</p>
+                        <p><b>שם הספר:</b> ${name}</p>
                         <p><b>מחבר:</b> ${bookData.author}</p>
                         <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
                         <p><b>מספר עותקים זמינים:</b>
