@@ -201,6 +201,45 @@
         .copies-buttons button {
             margin: 0 5px;
         }
+        /* סגנונות עבור טבלת ניהול לקוחות */
+        #contentArea #clientsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #contentArea #clientsTable th, #contentArea #clientsTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        #contentArea #clientsTable th {
+            background-color: #f2f2f2;
+        }
+        #contentArea #clientsTable tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        /* סגנונות עבור פרטי לקוח */
+        #contentArea #clientDetailsContainer h2 + p {
+            margin-bottom: 10px;
+        }
+        #contentArea #clientDetailsContainer h2 + p > b {
+            font-weight: bold;
+        }
+        #contentArea #clientDetailsContainer button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        #contentArea #clientDetailsContainer button:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -338,7 +377,7 @@
                     addClientForm.addEventListener('submit', handleAddClientSubmit);
                     break;
                 case 'manageClients':
-                    contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>כאן יוצג ממשק ניהול הלקוחות.</p>';
+                    loadManageClients();
                     break;
                 default:
                     contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
@@ -359,7 +398,8 @@
 
                 let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
                 snapshot.forEach(doc => {
-                    const bookData = doc.data();
+                    const bookData = doc.data
+();
                     html += `<tr onclick="showBookDetails('${doc.id}')"><td>${bookData.name}</td></tr>`;
                 });
                 html += '</tbody></table>';
@@ -385,7 +425,12 @@
                         <p><b>מחבר:</b> ${bookData.author}</p>
                         <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
                         <p><b>מספר עותקים זמינים:</b>
-<p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
+                        <span id="availableCopies">${bookData.availableCopies}</span></p>
+                        <div class="copies-buttons">
+                            <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
+                            <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
+                        </div>
+                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
                         <p><b>המשאילים הנוכחיים:</b> בקרוב יתווסף פיצ'ר זה</p>
                         <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
                         <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
@@ -508,6 +553,61 @@
                 console.error('שגיאה בהוספת לקוח:', error);
                 addClientError.textContent = `אירעה שגיאה בהוספת הלקוח: ${error.message}`;
                 addClientError.style.display = 'block';
+            }
+        }
+
+        async function loadManageClients() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>טוען לקוחות...</p>';
+
+            try {
+                const snapshot = await firestore.collection('clients').get();
+                if (snapshot.empty) {
+                    contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>אין לקוחות רשומים.</p>';
+                    return;
+                }
+
+                let html = '<h2>ניהול לקוחות</h2><table id="clientsTable"><thead><tr><th>שם מלא</th></tr></thead><tbody>';
+                snapshot.forEach(doc => {
+                    const clientData = doc.data();
+                    const fullName = `${clientData.firstName} ${clientData.lastName}`;
+                    html += `<tr onclick="showClientDetails('${doc.id}')"><td>${fullName}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                contentArea.innerHTML = html;
+
+            } catch (error) {
+                console.error('שגיאה בטעינת רשימת הלקוחות:', error);
+                contentArea.innerHTML = `<h2>ניהול לקוחות</h2><p>אירעה שגיאה בטעינת הלקוחות: ${error.message}</p>`;
+            }
+        }
+
+        async function showClientDetails(clientId) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '<p>טוען פרטי לקוח...</p>';
+
+            try {
+                const doc = await firestore.collection('clients').doc(clientId).get();
+                if (doc.exists) {
+                    const clientData = doc.data();
+                    contentArea.innerHTML = `
+                        <div id="clientDetailsContainer">
+                            <h2>פרטי לקוח</h2>
+                            <p><b>שם פרטי:</b> ${clientData.firstName}</p>
+                            <p><b>שם משפחה:</b> ${clientData.lastName}</p>
+                            <p><b>מספר טלפון:</b> ${clientData.phone}</p>
+                            <p><b>כתובת:</b> ${clientData.address}</p>
+                            <p><b>אימייל:</b> ${clientData.email || 'לא צוין'}</p>
+                            <p><b>ת"ז:</b> ${clientData.id}</p>
+                            <button onclick="loadManageClients()">חזרה לניהול לקוחות</button>
+                        </div>
+                    `;
+                } else {
+                    contentArea.innerHTML = '<p>הלקוח לא נמצא.</p>';
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת פרטי הלקוח:', error);
+                contentArea.innerHTML = `<p>אירעה שגיאה בטעינת פרטי הלקוח: ${error.message}</p>`;
             }
         }
 
