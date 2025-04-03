@@ -232,8 +232,7 @@
 </head>
 <body>
     <header>
-        <div class="logo-placeholder">
-        </div>
+        <div class="logo-placeholder"></div>
         <h1>פתרונות ספרייה טיטוס</h1>
         <nav>
             <ul>
@@ -264,8 +263,7 @@
                 <h3>ספרים מושאלים</h3>
             </div>
         </div>
-        <div id="contentArea" style="margin-top: 20px;">
-        </div>
+        <div id="contentArea" style="margin-top: 20px;"></div>
     </div>
 
     <footer>
@@ -292,21 +290,21 @@
         const auth = firebase.auth();
         const firestore = firebase.firestore();
 
-<body>
-  <script>
-    // כאן או בקובץ JS מקושר צריך להיות אתחול Firebase
-    // ואת הגדרת הפונקציה logout
-    function logout() {
-      auth.signOut().then(() => {
-        console.log('התנתקות בוצעה בהצלחה');
-        window.location.href = 'index.html';
-      }).catch((error) => {
-        console.error('שגיאה בהתנתקות:', error);
-        alert('אירעה שגיאה בהתנתקות.');
-      });
-    }
-  </script>
-</body>
+        function logout() {
+            auth.signOut().then(() => {
+                console.log('התנתקות בוצעה בהצלחה');
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error('שגיאה בהתנתקות:', error);
+                alert('אירעה שגיאה בהתנתקות.');
+            });
+        }
+
+        function generateSerialNumber() {
+            const min = 1000000;
+            const max = 9999999;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
         function loadContent(option) {
             const contentArea = document.getElementById('contentArea');
@@ -357,101 +355,37 @@
 
                             <label for="address">כתובת:</label>
                             <input type="text" id="address" name="address" required>
-<label for="email">אימייל:</label>
-                        <input type="email" id="email" name="email">
+                            <label for="email">אימייל:</label>
+                            <input type="email" id="email" name="email">
 
-                        <label for="id">ת"ז:</label>
-                        <input type="text" id="id" name="id" required>
+                            <label for="id">ת"ז:</label>
+                            <input type="text" id="id" name="id" required>
 
-                        <button type="submit">הוסף לקוח</button>
-                        <p class="success-message" id="addClientSuccess" style="display:none;">הלקוח נוסף בהצלחה!</p>
-                        <p class="error-message" id="addClientError" style="display:none;"></p>
-                    </form>
-                `;
-                    const addClientForm = document.getElementById('addClientForm');
-                    addClientForm.addEventListener('submit', handleAddClientSubmit);
-                    break;
-                case 'manageClients':
-                    loadManageClients();
-                    break;
-                case 'borrowedBooks':
-                    loadBorrowedBooksSection();
-                    break;
-                default:
-                    contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
-                    break;
-            }
-        }
+                            <button type="submit">הוסף לקוח</button>
+                            <p class="success-message" id="addClientSuccess" style="display:none;">הלקוח נוסף בהצלחה!</p>
+                            <p class="error-message" id="addClientError" style="display:none;"></p>
+                        </form>
+                    `;
+                    const addClientForm = document.getElementById('addClientForm');
+                    addClientForm.addEventListener('submit', handleAddClientSubmit);
+                    break;
+                case 'manageClients':
+                    loadManageClients();
+                    break;
+                case 'borrowedBooks':
+                    loadBorrowedBooksSection();
+                    break;
+                default:
+                    contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
+                    break;
+            }
+        }
 
-        async function loadManageInventory() {
-            const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>טוען ספרים...</p>';
+        async function loadManageInventory() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>טוען ספרים...</p>';
 
-            try {
-                const snapshot = await firestore.collection('books').get();
-                if (snapshot.empty) {
-                    contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>אין ספרים במלאי.</p>';
-                    return;
-                }
-
-                let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
-                snapshot.forEach(doc => {
-                    const bookData = doc.data();
-                    html += `<tr onclick="showBookDetails('${doc.id}')"><td>${bookData.name}</td></tr>`;
-                });
-                html += '</tbody></table>';
-                contentArea.innerHTML = html;
-
-            } catch (error) {
-                console.error('שגיאה בטעינת מלאי הספרים:', error);
-                contentArea.innerHTML = `<h2>ניהול מלאי ספרים</h2><p>אירעה שגיאה בטעינת המלאי: ${error.message}</p>`;
-            }
-        }
-
-        async function showBookDetails(bookId) {
-            const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = '<p>טוען פרטי ספר...</p>';
-
-            try {
-                const doc = await firestore.collection('books').doc(bookId).get();
-                if (doc.exists) {
-                    const bookData = doc.data();
-                    contentArea.innerHTML = `
-                        <h2>פרטי ספר</h2>
-                        <p><b>שם הספר:</b> <span id="bookDetailsName">${bookData.name}</span></p>
-                        <p><b>מחבר:</b> <span id="bookDetailsAuthor">${bookData.author}</span></p>
-                        <p><b>מאייר:</b> <span id="bookDetailsIllustrator">${bookData.illustrator || 'לא צוין'}</span></p>
-                        <p><b>מספר עותקים זמינים:</b>
-                        <span id="availableCopies">${bookData.availableCopies}</span></p>
-                        <div class="copies-buttons">
-                            <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
-                            <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
-                        </div>
-                        <p><b>מספר סידורי:</b> <span id="bookDetailsSerialNumber">${bookData.serialNumber}</span></p>
-                        <p><b>המשאילים הנוכחיים:</b> בקרוב יתווסף פיצ'ר זה</p>
-                        <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
-                        <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
-                        <p class="error-message" id="updateCopiesError" style="display:none;"></p>
-                    `;
-                } else {
-                    contentArea.innerHTML = '<p>הספר לא נמצא.</p>';
-                }
-            } catch (error) {
-                console.error('שגיאה בטעינת פרטי הספר:', error);
-                contentArea.innerHTML = `<p>אירעה שגיאה בטעינת פרטי הספר: ${error.message}</p>`;
-            }
-        }
-
-        async function updateCopies(bookId, change) {
-            const availableCopiesSpan = document.getElementById('availableCopies');
-            const updateCopiesSuccess = document.getElementById('updateCopiesSuccess');
-            const updateCopiesError = document.getElementById('updateCopiesError');
-            updateCopiesSuccess.style.display = 'none';
-            updateCopiesError.style.display = 'none';
-
-            try {
-                const bookRef = firestore.collection('books').doc(bookId);
-             try {
+            try {
                 const snapshot = await firestore.collection('books').get();
                 if (snapshot.empty) {
                     contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>אין ספרים במלאי.</p>';
@@ -470,6 +404,7 @@
                 console.error('שגיאה בטעינת מלאי הספרים:', error);
                 contentArea.innerHTML = `<h2>ניהול מלאי ספרים</h2><p>אירעה שגיאה בטעינת המלאי: ${error.message}</p>`;
             }
+        }
 
         async function showBookDetails(bookId) {
             const contentArea = document.getElementById('contentArea');
@@ -542,7 +477,7 @@
             const bookName = document.getElementById('bookName').value;
             const author = document.getElementById('author').value;
             const illustrator = document.getElementById('illustrator').value;
-            const copies= parseInt(document.getElementById('copies').value);
+            const copies = parseInt(document.getElementById('copies').value);
             const addBookSuccess = document.getElementById('addBookSuccess');
             const addBookError = document.getElementById('addBookError');
 
@@ -575,12 +510,6 @@
                 addBookError.textContent = `אירעה שגיאה בהוספת הספר: ${error.message}`;
                 addBookError.style.display = 'block';
             }
-        }
-
-        function generateSerialNumber() {
-            const min = 1000000;
-            const max = 9999999;
-            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
         async function handleAddClientSubmit(event) {
@@ -835,24 +764,13 @@
             }
         }
 
-async function markBookAsReturned(borrowedBookId, bookId, bookName) {
-  if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
-    try {
-      await firestore.collection('borrowed').doc(borrowedBookId).update({
-        returned: true,
-        returnDate: firebase.firestore.Timestamp.fromDate(new Date()) // Actual return date
-      });
-      console.log(`הספר "${bookName}" סומן כהוחזר.`);
-      // כאן תוכל להוסיף קוד נוסף לאחר שהעדכון בוצע בהצלחה
-    } catch (error) {
-      console.error("שגיאה בעדכון סטטוס ההחזרה:", error);
-      // כאן תוכל להוסיף קוד לטיפול בשגיאה
-    }
-  } else {
-    console.log(`פעולת סימון הספר "${bookName}" כהוחזר בוטלה על ידי המשתמש.`);
-    // כאן תוכל להוסיף קוד אם המשתמש ביטל את הפעולה
-  }
-}
+        async function markBookAsReturned(borrowedBookId, bookId, bookName) {
+            if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
+                try {
+                    await firestore.collection('borrowed').doc(borrowedBookId).update({
+                        returned: true,
+                        returnDate: firebase.firestore.Timestamp.fromDate(new Date()) // Actual return date
+                    });
 
                     // Increase available copies in the books collection
                     const bookRef = firestore.collection('books').doc(bookId);
@@ -869,6 +787,8 @@ async function markBookAsReturned(borrowedBookId, bookId, bookName) {
                     console.error('שגיאה בסימון הספר כהוחזר:', error);
                     alert(`אירעה שגיאה בסימון הספר כהוחזר: ${error.message}`);
                 }
+            } else {
+                console.log(`פעולת סימון הספר "${bookName}" כהוחזר בוטלה על ידי המשתמש.`);
             }
         }
 
