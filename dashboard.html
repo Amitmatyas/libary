@@ -37,7 +37,7 @@
         nav a {
             color: white;
             text-decoration: none;
-            cursor: pointer; /* הוסף סמן עכבר */
+            cursor: pointer;
         }
         .container {
             padding: 30px;
@@ -67,6 +67,41 @@
             color: #2c3e50;
             margin-bottom: 20px;
             text-align: center;
+        }
+        #addBookForm label {
+            display: block;
+            margin-bottom: 8px;
+            color: #7f8c8d;
+            font-size: 16px;
+            text-align: right;
+        }
+        #addBookForm input[type="text"],
+        #addBookForm input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            border: 1px solid #d1d8e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #addBookForm button {
+            background-color: #27ae60;
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        #addBookForm button:hover {
+            background-color: #219653;
+        }
+        #contentArea > h2 {
+            text-align: right;
+            margin-bottom: 20px;
         }
         footer {
             text-align: center;
@@ -135,11 +170,9 @@
 
         function logout() {
             auth.signOut().then(() => {
-                // Sign-out successful.
                 console.log('התנתקות בוצעה בהצלחה');
-                window.location.href = 'index.html'; // חזרה לדף ההתחברות
+                window.location.href = 'index.html';
             }).catch((error) => {
-                // An error happened.
                 console.error('שגיאה בהתנתקות:', error);
                 alert('אירעה שגיאה בהתנתקות.');
             });
@@ -157,7 +190,27 @@
                     contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>כאן יוצג ממשק ניהול המלאי.</p>';
                     break;
                 case 'addBook':
-                    contentArea.innerHTML = '<h2>הוספת ספרים</h2><p>כאן יוצג טופס הוספת ספרים.</p>';
+                    contentArea.innerHTML = `
+                        <h2>הוספת ספר חדש</h2>
+                        <form id="addBookForm">
+                            <label for="bookName">שם הספר:</label>
+                            <input type="text" id="bookName" name="bookName" required>
+
+                            <label for="author">כותב:</label>
+                            <input type="text" id="author" name="author" required>
+
+                            <label for="illustrator">מאייר (לא חובה):</label>
+                            <input type="text" id="illustrator" name="illustrator">
+
+                            <label for="copies">כמות עותקים:</label>
+                            <input type="number" id="copies" name="copies" min="1" value="1" required>
+
+                            <button type="submit">הוסף ספר</button>
+                        </form>
+                    `;
+                    // כאן נוסיף בהמשך את הלוגיקה לשמירת הספר
+                    const addBookForm = document.getElementById('addBookForm');
+                    addBookForm.addEventListener('submit', handleAddBookSubmit);
                     break;
                 case 'manageClients':
                     contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>כאן יוצג ממשק ניהול הלקוחות.</p>';
@@ -166,6 +219,26 @@
                     contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
                     break;
             }
+        }
+
+        function handleAddBookSubmit(event) {
+            event.preventDefault(); // מניעת טעינה מחדש של הדף
+            const bookName = document.getElementById('bookName').value;
+            const author = document.getElementById('author').value;
+            const illustrator = document.getElementById('illustrator').value;
+            const copies = parseInt(document.getElementById('copies').value);
+
+            // כאן אנחנו צריכים לשלוח את המידע הזה ל-Firebase
+            console.log('שם הספר:', bookName);
+            console.log('כותב:', author);
+            console.log('מאייר:', illustrator);
+            console.log('כמות עותקים:', copies);
+
+            // בשלב הבא, נאחסן את המידע הזה ב-Firebase
+            alert('הספר נוסף (כרגע רק הדגמה בקונסול)');
+
+            // לאחר ההוספה, אפשר לנקות את הטופס או להציג הודעה
+            document.getElementById('addBookForm').reset();
         }
     </script>
 </body>
