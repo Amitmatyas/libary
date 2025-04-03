@@ -830,8 +830,8 @@
         }
 
         async function markBookAsReturned(borrowedBookId, bookId, bookName) {
-            if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`
-                                async function markBookAsReturned(borrowedBookId, bookId, bookName) {
+if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`))
+    async function markBookAsReturned(borrowedBookId, bookId, bookName) {
             if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
                 try {
                     await firestore.collection('borrowed').doc(borrowedBookId).update({
