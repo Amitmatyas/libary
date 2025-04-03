@@ -683,11 +683,19 @@
             `;
         }
 
-        async function borrowBook() {
-            const serialNumberInput = document.getElementById('serialNumber');
-            const clientIdInput = document.getElementById('clientId');
-            const borrowStatus = document.getElementById('borrowStatus');
-            borrowStatus.innerHTML = 'בודק זמינות ספר ולקוח...';
+async function borrowBook() {
+            const serialNumberInput = document.getElementById('serialNumber'); // קולט את הערך מהשדה בטופס
+            const clientIdInput = document.getElementById('clientId');
+            const borrowStatus = document.getElementById('borrowStatus');
+            borrowStatus.innerHTML = 'בודק זמינות ספר ולקוח...';
+
+            const serialNumber = serialNumberInput.value.trim(); // הערך שהמשתמש הזין
+
+            // ...
+
+            const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
+            // ...
+        }
 
             const serialNumber = serialNumberInput.value.trim();
             const clientId = clientIdInput.value.trim();
