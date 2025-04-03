@@ -204,7 +204,7 @@
         <h1>פתרונות ספרייה טיטוס</h1>
         <nav>
             <ul>
-                <li><a onclick="logout()">התנתקות</a></li>
+                <li><a onclick="if (typeof logout === 'function') { logout(); } else { console.error('הפונקציה logout לא הוגדרה.'); }">התנתקות</a></li>
             </ul>
         </nav>
     </header>
@@ -212,19 +212,19 @@
     <div class="container">
         <h2>לוח בקרה</h2>
         <div class="dashboard-options">
-            <div class="dashboard-option" onclick="loadContent('borrow')">
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('borrow'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>השאלת ספרים</h3>
             </div>
-            <div class="dashboard-option" onclick="loadContent('manageInventory')">
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('manageInventory'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>ניהול מלאי ספרים</h3>
             </div>
-            <div class="dashboard-option" onclick="loadContent('addBook')">
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('addBook'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>הוספת ספרים</h3>
             </div>
-            <div class="dashboard-option" onclick="loadContent('addClient')">
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('addClient'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>הוספת לקוח</h3>
             </div>
-            <div class="dashboard-option" onclick="loadContent('manageClients')">
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('manageClients'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>ניהול לקוחות</h3>
             </div>
         </div>
@@ -340,55 +340,102 @@
             }
         }
 
+        async function loadManageInventory() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>טוען ספרים...</p>';
+
+            try {
+                const snapshot = await firestore.collection('books').get();
+                if (snapshot.empty) {
+                    contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>אין ספרים במלאי.</p>';
+                    return;
+                }
+
+                let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th><th>מחבר</th><th>עותקים זמינים</th></tr></thead><tbody>';
+                snapshot.forEach(doc => {
+                    const bookData = doc.data();
+                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{bookData.name}</td><td><span class="math-inline">\{bookData\.author\}</td\><td\></span>{bookData.availableCopies}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                contentArea.innerHTML = html;
+
+            } catch (error) {
+                console.error('שגיאה בטעינת מלאי הספרים:', error);
+                contentArea.innerHTML = `<h2>ניהול מלאי ספרים</h2><p>אירעה שגיאה בטעינת המלאי: ${error.message}</p>`;
+            }
+        }
+
+        async function showBookDetails(bookId) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '<p>טוען פרטי ספר...</p>';
+
+            try {
+                const doc = await firestore.collection('books').doc(bookId).get();
+                if (doc.exists) {
+                    const bookData = doc.data();
+                    contentArea.innerHTML = `
+                        <h2>פרטי ספר</h2>
+                        <p><b>שם הספר:</b> ${bookData.name}</p>
+                        <p><b>מחבר:</b> ${bookData.author}</p>
+                        <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
+                        <p><b>מספר עותקים:</b> ${bookData.copies}</p>
+                        <p><b>עותקים זמינים:</b> ${bookData.availableCopies}</p>
+                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
+                        <button onclick="loadManageInventory()">חזרה לניהול מלא
+                        י</button>
+                    `;
+                } else {
+                    contentArea.innerHTML = '<p>הספר לא נמצא.</p>';
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת פרטי הספר:', error);
+                contentArea.innerHTML = `<p>אירעה שגיאה בטעינת פרטי הספר: ${error.message}</p>`;
+            }
+        }
+
         async function handleAddBookSubmit(event) {
-            console.log('handleAddBookSubmit הופעלה');
             event.preventDefault();
             const bookName = document.getElementById('bookName').value;
             const author = document.getElementById('author').value;
             const illustrator = document.getElementById('illustrator').value;
             const copies = parseInt(document.getElementById('copies').value);
-            const successMessage = document.getElementById('addBookSuccess');
-            const errorMessage = document.getElementById('addBookError');
+            const addBookSuccess = document.getElementById('addBookSuccess');
+            const addBookError = document.getElementById('addBookError');
 
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
+            addBookSuccess.style.display = 'none';
+            addBookError.style.display = 'none';
 
-            console.log('שם הספר:', bookName);
-            console.log('מחבר:', author);
-            console.log('מאייר:', illustrator);
-            console.log('עותקים:', copies);
-
-            if (!bookName || !author || isNaN(copies) || copies < 1) {
-                errorMessage.textContent = 'אנא מלאו את כל השדות הנדרשים בצורה תקינה.';
-                errorMessage.style.display = 'block';
+            if (isNaN(copies) || copies < 1) {
+                addBookError.textContent = 'מספר העותקים חייב להיות גדול מ-0.';
+                addBookError.style.display = 'block';
                 return;
             }
 
-            // --- יצירת מספר סידורי ייחודי בן 7 ספרות ---
-            const serialNumber = Math.floor(1000000 + Math.random() * 9000000).toString();
-            console.log('מספר סידורי שנוצר:', serialNumber);
-
-            const bookData = {
-                name: bookName,
-                author: author,
-                illustrator: illustrator,
-                copies: copies,
-                availableCopies: copies,
-                serialNumber: serialNumber // הוספת המספר הסידורי לנתונים
-            };
-
-            console.log('הנתונים לפני שליחה ל-Firestore:', bookData);
-
             try {
-                const docRef = await firestore.collection('books').add(bookData);
-                console.log('ספר נוסף עם ID: ', docRef.id);
-                successMessage.style.display = 'block';
+                // Generate a unique serial number
+                const serialNumber = generateSerialNumber();
+
+                await firestore.collection('books').add({
+                    name: bookName,
+                    author: author,
+                    illustrator: illustrator,
+                    copies: copies,
+                    availableCopies: copies,
+                    serialNumber: serialNumber // Store the serial number
+                });
                 document.getElementById('addBookForm').reset();
+                addBookSuccess.style.display = 'block';
+                console.log('ספר נוסף בהצלחה עם מספר סידורי:', serialNumber);
             } catch (error) {
-                console.error('שגיאה בהוספת הספר: ', error);
-                errorMessage.textContent = 'אירעה שגיאה בהוספת הספר: ' + error.message;
-                errorMessage.style.display = 'block';
+                console.error('שגיאה בהוספת ספר:', error);
+                addBookError.textContent = `אירעה שגיאה בהוספת הספר: ${error.message}`;
+                addBookError.style.display = 'block';
             }
+        }
+
+        function generateSerialNumber() {
+            // Simple implementation for demonstration purposes
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         }
 
         async function handleAddClientSubmit(event) {
@@ -399,10 +446,34 @@
             const address = document.getElementById('address').value;
             const email = document.getElementById('email').value;
             const id = document.getElementById('id').value;
-            const successMessage = document.getElementById('addClientSuccess');
-            const errorMessage = document.getElementById('addClientError');
+            const addClientSuccess = document.getElementById('addClientSuccess');
+            const addClientError = document.getElementById('addClientError');
 
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
+            addClientSuccess.style.display = 'none';
+            addClientError.style.display = 'none';
 
-            if (!firstName || !lastName || !
+            try {
+                await firestore.collection('clients').add({
+                    firstName: firstName,
+                    lastName: lastName,
+                    phone: phone,
+                    address: address,
+                    email: email,
+                    id: id
+                });
+                document.getElementById('addClientForm').reset();
+                addClientSuccess.style.display = 'block';
+                console.log('לקוח נוסף בהצלחה');
+            } catch (error) {
+                console.error('שגיאה בהוספת לקוח:', error);
+                addClientError.textContent = `אירעה שגיאה בהוספת הלקוח: ${error.message}`;
+                addClientError.style.display = 'block';
+            }
+        }
+
+        // טען תוכן ברירת מחדל בעמוד הטעינה (אופציונלי)
+        loadContent('manageInventory');
+
+    </script>
+</body>
+</html>
