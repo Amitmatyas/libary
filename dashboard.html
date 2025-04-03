@@ -829,15 +829,24 @@
             }
         }
 
-        async function markBookAsReturned(borrowedBookId, bookId, bookName) {
-if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`))
-    async function markBookAsReturned(borrowedBookId, bookId, bookName) {
-            if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
-                try {
-                    await firestore.collection('borrowed').doc(borrowedBookId).update({
-                        returned: true,
-                        returnDate: firebase.firestore.Timestamp.fromDate(new Date()) // Actual return date
-                    });
+async function markBookAsReturned(borrowedBookId, bookId, bookName) {
+  if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
+    try {
+      await firestore.collection('borrowed').doc(borrowedBookId).update({
+        returned: true,
+        returnDate: firebase.firestore.Timestamp.fromDate(new Date()) // Actual return date
+      });
+      console.log(`הספר "${bookName}" סומן כהוחזר.`);
+      // כאן תוכל להוסיף קוד נוסף לאחר שהעדכון בוצע בהצלחה
+    } catch (error) {
+      console.error("שגיאה בעדכון סטטוס ההחזרה:", error);
+      // כאן תוכל להוסיף קוד לטיפול בשגיאה
+    }
+  } else {
+    console.log(`פעולת סימון הספר "${bookName}" כהוחזר בוטלה על ידי המשתמש.`);
+    // כאן תוכל להוסיף קוד אם המשתמש ביטל את הפעולה
+  }
+}
 
                     // Increase available copies in the books collection
                     const bookRef = firestore.collection('books').doc(bookId);
