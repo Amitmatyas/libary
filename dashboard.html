@@ -377,12 +377,13 @@
                         <h2>פרטי ספר</h2>
                         <p><b>שם הספר:</b> ${bookData.name}</p>
                         <p><b>מחבר:</b> ${bookData.author}</p>
-                        <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
-                        <p><b>כמות עותקים:</b> <span id="totalCopies">${bookData.copies}</span></p>
+                        <p><b>מאייר:</b> <span class="math-inline">\{bookData\.illustrator \|\| 'לא צוין'\}</p\>
+<p\><b\>כמות עותקים\:</b\> <span id\="totalCopies"\></span>{bookData.copies}</span></p>
                         <p><b>עותקים זמינים:</b> <span id="availableCopies">${bookData.availableCopies}</span></p>
-                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
-                        <button onclick="updateCopies('${bookId}', 1)">הוסף עותק</button>
-                        <button onclick="updateCopies('${bookId}', -1)">הורד עותק</button>
+                        <p><b>מספר סידורי:</b> <span class="math-inline">\{bookData\.serialNumber\}</p\>
+<button onclick\="updateCopies\('</span>{bookId}', 1)">הוסף עותק</button>
+                        <button onclick="updateCopies('${bookId}', -1)">
+הורד עותק</button>
                         <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
                         <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
                         <p class="error-message" id="updateCopiesError" style="display:none;"></p>
@@ -454,7 +455,7 @@
             }
 
             try {
-                // Generate a unique serial number
+                // Generate a unique serial number of 7 digits
                 const serialNumber = generateSerialNumber();
 
                 await firestore.collection('books').add({
@@ -463,7 +464,7 @@
                     illustrator: illustrator,
                     copies: copies,
                     availableCopies: copies,
-                    serialNumber: serialNumber // Store the serial number
+                    serialNumber: serialNumber
                 });
                 document.getElementById('addBookForm').reset();
                 addBookSuccess.style.display = 'block';
@@ -476,8 +477,9 @@
         }
 
         function generateSerialNumber() {
-            // Simple implementation for demonstration purposes
-            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const min = 1000000;
+            const max = 9999999;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
         async function handleAddClientSubmit(event) {
