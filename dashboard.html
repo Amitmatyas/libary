@@ -195,6 +195,12 @@
         #contentArea button:hover {
             background-color: #2980b9;
         }
+        .copies-buttons {
+            margin-top: 10px;
+        }
+        .copies-buttons button {
+            margin: 0 5px;
+        }
     </style>
 </head>
 <body>
@@ -371,19 +377,21 @@
 
             try {
                 const doc = await firestore.collection('books').doc(bookId).get();
-                if (doc.exists
-) {
+                if (doc.exists) {
                     const bookData = doc.data();
                     contentArea.innerHTML = `
                         <h2>פרטי ספר</h2>
                         <p><b>שם הספר:</b> ${bookData.name}</p>
                         <p><b>מחבר:</b> ${bookData.author}</p>
                         <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
-                        <p><b>כמות עותקים:</b> <span id="totalCopies">${bookData.copies}</span></p>
-                        <p><b>עותקים זמינים:</b> <span id="availableCopies">${bookData.availableCopies}</span></p>
+                        <p><b>מספר עותקים זמינים:</b>
+<span id="availableCopies">${bookData.availableCopies}</span></p>
+                        <div class="copies-buttons">
+                            <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
+                            <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
+                        </div>
                         <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
-                        <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
-                        <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
+                        <p><b>המשאילים הנוכחיים:</b> בקרוב יתווסף פיצ'ר זה</p>
                         <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
                         <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
                         <p class="error-message" id="updateCopiesError" style="display:none;"></p>
@@ -398,7 +406,6 @@
         }
 
         async function updateCopies(bookId, change) {
-            const totalCopiesSpan = document.getElementById('totalCopies');
             const availableCopiesSpan = document.getElementById('availableCopies');
             const updateCopiesSuccess = document.getElementById('updateCopiesSuccess');
             const updateCopiesError = document.getElementById('updateCopiesError');
@@ -412,20 +419,14 @@
                     if (!doc.exists) {
                         throw "הספר לא קיים!";
                     }
-                    const currentTotal = doc.data().copies;
                     const currentAvailable = doc.data().availableCopies;
-                    const newTotal = currentTotal + change;
                     const newAvailable = currentAvailable + change;
 
-                    if (newTotal < 0) {
-                        throw "לא ניתן להוריד את כמות העותקים מתחת ל-0.";
-                    }
                     if (newAvailable < 0) {
                         throw "לא ניתן להוריד את כמות העותקים הזמינים מתחת ל-0.";
                     }
 
-                    transaction.update(bookRef, { copies: newTotal, availableCopies: newAvailable });
-                    totalCopiesSpan.textContent = newTotal;
+                    transaction.update(bookRef, { availableCopies: newAvailable });
                     availableCopiesSpan.textContent = newAvailable;
                     updateCopiesSuccess.style.display = 'block';
                 });
