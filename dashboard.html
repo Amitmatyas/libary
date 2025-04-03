@@ -633,55 +633,71 @@
                 return;
             }
 
-            try {
-                const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
-                if (bookQuery.empty) {
-                    borrowStatus.innerHTML = '<p class="error-message">ספר עם מספר סידורי זה לא נמצא.</p>';
-                    return;
-                }
+try {
+    const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
+    if (bookQuery.empty) {
+        borrowStatus.innerHTML = '<p class="error-message">ספר עם מספר סידורי זה לא נמצא.</p>';
+        return;
+    }
 
-                const bookDoc = bookQuery.docs[0];
-                const bookData = bookDoc.data();
-                if (bookData.availableCopies <= 0) {
-                    borrowStatus.innerHTML = `<p class="error-message">הספר "${bookData.name}" אינו זמין להשאלה.</p>`;
-                    return;
-                }
+    const bookDoc = bookQuery.docs[0];
+    const bookData = bookDoc.data();
 
-                const clientDoc = await firestore.collection('clients').doc(clientId).get();
-                if (!clientDoc.exists) {
-                    borrowStatus.innerHTML = '<p class="error-message">לקוח עם ת"ז זה לא נמצא.</p>';
-                    return;
-                }
+    const clientDoc = await firestore.collection('clients').doc(clientId).get();
+    if (!clientDoc.exists) {
+        borrowStatus.innerHTML = '<p class="error-message">לקוח עם ת"ז זה לא נמצא.</p>';
+        return;
+    }
 
-                const clientData = clientDoc.data();
-                const borrowDate = new Date();
-                const returnDate = new Date();
-                returnDate.setDate(borrowDate.getDate() + 30); // ברירת מחדל: 30 יום להשאלה
+    const clientData = clientDoc.data();
 
-                await firestore.collection('borrowed').add({
-                    bookId: bookDoc.id,
-                    bookName: bookData.name,
-                    clientId: clientDoc.id,
-                    clientName: `${clientData.firstName} ${clientData.lastName}`,
-                    borrowDate: firebase.firestore.Timestamp.fromDate(borrowDate),
-                    returnDate: firebase.firestore.Timestamp.fromDate(returnDate),
-                    returned: false
-                });
+    // הצגת פרטי הספר והלקוח
+    borrowStatus.innerHTML = `
+        <p><b>פרטי הספר:</b></p>
+        <p>שם הספר: ${bookData.name}</p>
+        <p>מחבר: ${bookData.author}</p>
+        <p>מספר עותקים זמינים: ${bookData.availableCopies}</p>
+        <p><b>פרטי הלקוח:</b></p>
+        <p>שם הלקוח: ${clientData.firstName} ${clientData.lastName}</p>
+        <button id="borrowBookButton">השאל ספר</button>
+        <button id="editDetailsButton">תיקון פרטים</button>
+    `;
 
-                // Decrease available copies
-                await firestore.collection('books').doc(bookDoc.id).update({
-                    availableCopies: bookData.availableCopies - 1
-                });
+    document.getElementById('borrowBookButton').addEventListener('click', async () => {
+        try {
+            const borrowDate = new Date();
+            const returnDate = new Date();
+            returnDate.setDate(borrowDate.getDate() + 14); // שבועיים קדימה
 
-                borrowStatus.innerHTML = `<p class="success-message">הספר "${bookData.name}" הושאל ל-${clientData.firstName} ${clientData.lastName}. יש להחזיר עד ${returnDate.toLocaleDateString()}.</p>`;
-                serialNumberInput.value = '';
-                clientIdInput.value = '';
+            await firestore.collection('borrowed').add({
+                bookId: bookDoc.id,
+                bookName: bookData.name,
+                clientId: clientDoc.id,
+                clientName: `${clientData.firstName} ${clientData.lastName}`,
+                borrowDate: firebase.firestore.Timestamp.fromDate(borrowDate),
+                returnDate: firebase.firestore.Timestamp.fromDate(returnDate),
+                returned: false
+            });
 
-            } catch (error) {
-                console.error('שגיאה בהשאלת ספר:', error);
-                borrowStatus.innerHTML = `<p class="error-message">אירעה שגיאה בהשאלת הספר: ${error.message}</p>`;
-            }
+            // הפחתת מספר העותקים הזמינים
+            await firestore.collection('books').doc(bookDoc.id).update({
+                availableCopies: bookData.availableCopies - 1
+            });
+
+            borrowStatus.innerHTML = `<p class="success-message">הספר "${bookData.name}" הושאל ל-${clientData.firstName} ${clientData.lastName}. יש להחזיר עד ${returnDate.toLocaleDateString()}.</p>`;
+        } catch (error) {
+            console.error('שגיאה בהשאלת ספר:', error);
+            borrowStatus.innerHTML = `<p class="error-message">אירעה שגיאה בהשאלת הספר: ${error.message}</p>`;
         }
+    });
+
+    document.getElementById('editDetailsButton').addEventListener('click', () => {
+        // קוד לתיקון פרטי הספר או הלקוח
+    });
+} catch (error) {
+    console.error('שגיאה בבדיקת הספר או הלקוח:', error);
+    borrowStatus.innerHTML = `<p class="error-message">אירעה שגיאה בבדיקת הספר או הלקוח: ${error.message}</p>`;
+}
 
         async function loadBorrowedBooksSection() {
             const contentArea = document.getElementById('contentArea');
