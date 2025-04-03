@@ -443,7 +443,9 @@
             updateCopiesSuccess.style.display = 'none';
             updateCopiesError.style.display = 'none';
 
-            try {
+            try {
+                const bookRef = firestore.collection('books').doc(bookId);
+             try {
                 const snapshot = await firestore.collection('books').get();
                 if (snapshot.empty) {
                     contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>אין ספרים במלאי.</p>';
@@ -683,25 +685,18 @@
             `;
         }
 
-async function borrowBook() {
-            const serialNumberInput = document.getElementById('serialNumber'); // קולט את הערך מהשדה בטופס
-            const clientIdInput = document.getElementById('clientId');
-            const borrowStatus = document.getElementById('borrowStatus');
-            borrowStatus.innerHTML = 'בודק זמינות ספר ולקוח...';
-
-            const serialNumber = serialNumberInput.value.trim(); // הערך שהמשתמש הזין
-
-            // ...
-
-            const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
-            // ...
-        }
+        async function borrowBook() {
+            const serialNumberInput = document.getElementById('serialNumber');
+            const clientIdInput = document.getElementById('clientId');
+            const borrowStatus = document.getElementById('borrowStatus');
+            borrowStatus.innerHTML = 'בודק זמינות ספר ולקוח...';
 
             const serialNumber = serialNumberInput.value.trim();
             const clientId = clientIdInput.value.trim();
 
             if (!serialNumber || !clientId) {
                 borrowStatus.innerHTML = '<p class="error-message">יש למלא את כל השדות.</p>';
+                return;
             }
 
             try {
@@ -835,7 +830,9 @@ async function borrowBook() {
             }
         }
 
-               async function markBookAsReturned(borrowedBookId, bookId, bookName) {
+        async function markBookAsReturned(borrowedBookId, bookId, bookName) {
+            if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`
+                                async function markBookAsReturned(borrowedBookId, bookId, bookName) {
             if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
                 try {
                     await firestore.collection('borrowed').doc(borrowedBookId).update({
