@@ -68,6 +68,7 @@
             margin-bottom: 20px;
             text-align: center;
         }
+        /* סגנונות עבור טופס הוספת ספר */
         #addBookForm label {
             display: block;
             margin-bottom: 8px;
@@ -99,6 +100,39 @@
         #addBookForm button:hover {
             background-color: #219653;
         }
+        /* סגנונות עבור טופס הוספת לקוח */
+        #addClientForm label {
+            display: block;
+            margin-bottom: 8px;
+            color: #7f8c8d;
+            font-size: 16px;
+            text-align: right;
+        }
+        #addClientForm input[type="text"],
+        #addClientForm input[type="email"],
+        #addClientForm input[type="tel"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            border: 1px solid #d1d8e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #addClientForm button {
+            background-color: #3498db;
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        #addClientForm button:hover {
+            background-color: #2980b9;
+        }
         #contentArea > h2 {
             text-align: right;
             margin-bottom: 20px;
@@ -111,6 +145,16 @@
             position: fixed;
             bottom: 0;
             width: 100%;
+        }
+        .success-message {
+            color: green;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .error-message {
+            color: red;
+            margin-top: 15px;
+            text-align: center;
         }
     </style>
 </head>
@@ -152,6 +196,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script>
         // Your web app's Firebase configuration (העתק את שלך לכאן!)
         const firebaseConfig = {
@@ -167,6 +212,7 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const firestore = firebase.firestore();
 
         function logout() {
             auth.signOut().then(() => {
@@ -206,14 +252,42 @@
                             <input type="number" id="copies" name="copies" min="1" value="1" required>
 
                             <button type="submit">הוסף ספר</button>
+                            <p class="success-message" id="addBookSuccess" style="display:none;">הספר נוסף בהצלחה!</p>
+                            <p class="error-message" id="addBookError" style="display:none;"></p>
                         </form>
                     `;
-                    // כאן נוסיף בהמשך את הלוגיקה לשמירת הספר
                     const addBookForm = document.getElementById('addBookForm');
                     addBookForm.addEventListener('submit', handleAddBookSubmit);
                     break;
                 case 'manageClients':
-                    contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>כאן יוצג ממשק ניהול הלקוחות.</p>';
+                    contentArea.innerHTML = `
+                        <h2>הוספת לקוח חדש</h2>
+                        <form id="addClientForm">
+                            <label for="firstName">שם פרטי:</label>
+                            <input type="text" id="firstName" name="firstName" required>
+
+                            <label for="lastName">שם משפחה:</label>
+                            <input type="text" id="lastName" name="lastName" required>
+
+                            <label for="phone">מספר טלפון:</label>
+                            <input type="tel" id="phone" name="phone" required>
+
+                            <label for="address">כתובת:</label>
+                            <input type="text" id="address" name="address" required>
+
+                            <label for="email">אימייל:</label>
+                            <input type="email" id="email" name="email">
+
+                            <label for="id">ת"ז:</label>
+                            <input type="text" id="id" name="id" required>
+
+                            <button type="submit">הוסף לקוח</button>
+                            <p class="success-message" id="addClientSuccess" style="display:none;">הלקוח נוסף בהצלחה!</p>
+                            <p class="error-message" id="addClientError" style="display:none;"></p>
+                        </form>
+                    `;
+                    const addClientForm = document.getElementById('addClientForm');
+                    addClientForm.addEventListener('submit', handleAddClientSubmit);
                     break;
                 default:
                     contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
@@ -221,24 +295,67 @@
             }
         }
 
-        function handleAddBookSubmit(event) {
-            event.preventDefault(); // מניעת טעינה מחדש של הדף
+        async function handleAddBookSubmit(event) {
+            event.preventDefault();
             const bookName = document.getElementById('bookName').value;
             const author = document.getElementById('author').value;
             const illustrator = document.getElementById('illustrator').value;
             const copies = parseInt(document.getElementById('copies').value);
+            const successMessage = document.getElementById('addBookSuccess');
+            const errorMessage = document.getElementById('addBookError');
 
-            // כאן אנחנו צריכים לשלוח את המידע הזה ל-Firebase
-            console.log('שם הספר:', bookName);
-            console.log('כותב:', author);
-            console.log('מאייר:', illustrator);
-            console.log('כמות עותקים:', copies);
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
 
-            // בשלב הבא, נאחסן את המידע הזה ב-Firebase
-            alert('הספר נוסף (כרגע רק הדגמה בקונסול)');
+            try {
+                const docRef = await firestore.collection('books').add({
+                    name: bookName,
+                    author: author,
+                    illustrator: illustrator,
+                    copies: copies,
+                    availableCopies: copies // בהתחלה, כל העותקים זמינים
+                });
+                console.log('ספר נוסף עם ID: ', docRef.id);
+                successMessage.style.display = 'block';
+                document.getElementById('addBookForm').reset();
+            } catch (error) {
+                console.error('שגיאה בהוספת הספר: ', error);
+                errorMessage.textContent = 'אירעה שגיאה בהוספת הספר.';
+                errorMessage.style.display = 'block';
+            }
+        }
 
-            // לאחר ההוספה, אפשר לנקות את הטופס או להציג הודעה
-            document.getElementById('addBookForm').reset();
+        async function handleAddClientSubmit(event) {
+            event.preventDefault();
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const email = document.getElementById('email').value;
+            const id = document.getElementById('id').value;
+            const successMessage = document.getElementById('addClientSuccess');
+            const errorMessage = document.getElementById('addClientError');
+
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+
+            try {
+                const docRef = await firestore.collection('clients').add({
+                    firstName: firstName,
+                    lastName: lastName,
+                    phone: phone,
+                    address: address,
+                    email: email,
+                    id: id
+                });
+                console.log('לקוח נוסף עם ID: ', docRef.id);
+                successMessage.style.display = 'block';
+                document.getElementById('addClientForm').reset();
+            } catch (error) {
+                console.error('שגיאה בהוספת הלקוח: ', error);
+                errorMessage.textContent = 'אירעה שגיאה בהוספת הלקוח.';
+                errorMessage.style.display = 'block';
+            }
         }
     </script>
 </body>
