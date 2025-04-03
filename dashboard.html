@@ -633,6 +633,7 @@
                 return;
             }
 
+// קוד חדש (כן טוב)
 try {
     const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
     if (bookQuery.empty) {
