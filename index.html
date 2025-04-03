@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פתרונות ספרייה טיטוס - התחברות</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            text-align: right;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 250px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>פתרונות ספרייה טיטוס</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">קוד משתמש:</label>
+                <input type="text" id="username" name="username">
+            </div>
+            <div class="form-group">
+                <label for="password">סיסמה:</label>
+                <input type="password" id="password" name="password">
+            </div>
+            <button type="submit">התחבר</button>
+        </form>
+    </div>
+
+    <script>
+        // כאן נוסיף בהמשך את הלוגיקה של ההתחברות
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // מונע את טעינת העמוד מחדש
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // כאן אמורה להיות בדיקה של שם המשתמש והסיסמה
+            // ובמקרה של הצלחה, מעבר לעמוד הניהול
+
+            if (username === 'demo' && password === 'demo') {
+                window.location.href = 'dashboard.html'; // מעבר לעמוד הניהול (ניצור אותו עוד מעט)
+            } else {
+                alert('שם משתמש או סיסמה שגויים');
+            }
+        });
+    </script>
+</body>
+</html>
