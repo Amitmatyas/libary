@@ -292,15 +292,21 @@
         const auth = firebase.auth();
         const firestore = firebase.firestore();
 
-        function logout() {
-            auth.signOut().then(() => {
-                console.log('התנתקות בוצעה בהצלחה');
-                window.location.href = 'index.html';
-            }).catch((error) => {
-                console.error('שגיאה בהתנתקות:', error);
-                alert('אירעה שגיאה בהתנתקות.');
-            });
-        }
+<body>
+  <script>
+    // כאן או בקובץ JS מקושר צריך להיות אתחול Firebase
+    // ואת הגדרת הפונקציה logout
+    function logout() {
+      auth.signOut().then(() => {
+        console.log('התנתקות בוצעה בהצלחה');
+        window.location.href = 'index.html';
+      }).catch((error) => {
+        console.error('שגיאה בהתנתקות:', error);
+        alert('אירעה שגיאה בהתנתקות.');
+      });
+    }
+  </script>
+</body>
 
         function loadContent(option) {
             const contentArea = document.getElementById('contentArea');
