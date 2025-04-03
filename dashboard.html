@@ -182,6 +182,9 @@
             <div class="dashboard-option" onclick="loadContent('addBook')">
                 <h3>הוספת ספרים</h3>
             </div>
+            <div class="dashboard-option" onclick="loadContent('addClient')">
+                <h3>הוספת לקוח</h3>
+            </div>
             <div class="dashboard-option" onclick="loadContent('manageClients')">
                 <h3>ניהול לקוחות</h3>
             </div>
@@ -198,7 +201,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script>
-        // Your web app's Firebase configuration (העתק את שלך לכאן!)
+        // Your web app's Firebase configuration
         const firebaseConfig = {
           apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
           authDomain: "liabry.firebaseapp.com",
@@ -259,7 +262,7 @@
                     const addBookForm = document.getElementById('addBookForm');
                     addBookForm.addEventListener('submit', handleAddBookSubmit);
                     break;
-                case 'manageClients':
+                case 'addClient':
                     contentArea.innerHTML = `
                         <h2>הוספת לקוח חדש</h2>
                         <form id="addClientForm">
@@ -289,6 +292,9 @@
                     const addClientForm = document.getElementById('addClientForm');
                     addClientForm.addEventListener('submit', handleAddClientSubmit);
                     break;
+                case 'manageClients':
+                    contentArea.innerHTML = '<h2>ניהול לקוחות</h2><p>כאן יוצג ממשק ניהול הלקוחות.</p>';
+                    break;
                 default:
                     contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
                     break;
@@ -313,7 +319,7 @@
                     author: author,
                     illustrator: illustrator,
                     copies: copies,
-                    availableCopies: copies // בהתחלה, כל העותקים זמינים
+                    availableCopies: copies
                 });
                 console.log('ספר נוסף עם ID: ', docRef.id);
                 successMessage.style.display = 'block';
