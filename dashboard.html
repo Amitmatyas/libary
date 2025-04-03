@@ -156,6 +156,45 @@
             margin-top: 15px;
             text-align: center;
         }
+        /* סגנונות עבור טבלת ניהול מלאי */
+        #contentArea table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #contentArea th, #contentArea td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        #contentArea th {
+            background-color: #f2f2f2;
+        }
+        #contentArea tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        /* סגנונות עבור פרטי ספר */
+        #contentArea h2 + p {
+            margin-bottom: 10px;
+        }
+        #contentArea h2 + p > b {
+            font-weight: bold;
+        }
+        #contentArea button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        #contentArea button:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -236,8 +275,7 @@
                     contentArea.innerHTML = '<h2>השאלת ספרים</h2><p>כאן יוצג ממשק השאלת הספרים.</p>';
                     break;
                 case 'manageInventory':
-                    contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>כאן יוצג ממשק ניהול המלאי.</p>';
-                    // כאן נצטרך להוסיף את הקוד לטעינת והצגת הספרים
+                    loadManageInventory();
                     break;
                 case 'addBook':
                     contentArea.innerHTML = `
@@ -367,30 +405,4 @@
             successMessage.style.display = 'none';
             errorMessage.style.display = 'none';
 
-            if (!firstName || !lastName || !phone || !address || !id) {
-                errorMessage.textContent = 'אנא מלאו את כל השדות הנדרשים.';
-                errorMessage.style.display = 'block';
-                return;
-            }
-
-            try {
-                const docRef = await firestore.collection('clients').add({
-                    firstName: firstName,
-                    lastName: lastName,
-                    phone: phone,
-                    address: address,
-                    email: email,
-                    id: id
-                });
-                console.log('לקוח נוסף עם ID: ', docRef.id);
-                successMessage.style.display = 'block';
-                document.getElementById('addClientForm').reset();
-            } catch (error) {
-                console.error('שגיאה בהוספת הלקוח: ', error);
-                errorMessage.textContent = 'אירעה שגיאה בהוספת הלקוח: ' + error.message;
-                errorMessage.style.display = 'block';
-            }
-        }
-    </script>
-</body>
-</html>
+            if (!firstName || !lastName || !
