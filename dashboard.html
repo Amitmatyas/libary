@@ -37,6 +37,7 @@
         nav a {
             color: white;
             text-decoration: none;
+            cursor: pointer; /* הוסף סמן עכבר */
         }
         .container {
             padding: 30px;
@@ -85,7 +86,7 @@
         <h1>פתרונות ספרייה טיטוס</h1>
         <nav>
             <ul>
-                <li><a href="#">התנתקות</a></li>
+                <li><a onclick="logout()">התנתקות</a></li>
             </ul>
         </nav>
     </header>
@@ -114,7 +115,36 @@
         <p>&copy; 2025 פתרונות ספרייה טיטוס</p>
     </footer>
 
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
+        // Your web app's Firebase configuration (העתק את שלך לכאן!)
+        const firebaseConfig = {
+          apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
+          authDomain: "liabry.firebaseapp.com",
+          projectId: "liabry",
+          storageBucket: "liabry.firebasestorage.app",
+          messagingSenderId: "1044753248505",
+          appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
+          measurementId: "G-1GSLD867H5"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function logout() {
+            auth.signOut().then(() => {
+                // Sign-out successful.
+                console.log('התנתקות בוצעה בהצלחה');
+                window.location.href = 'index.html'; // חזרה לדף ההתחברות
+            }).catch((error) => {
+                // An error happened.
+                console.error('שגיאה בהתנתקות:', error);
+                alert('אירעה שגיאה בהתנתקות.');
+            });
+        }
+
         function loadContent(option) {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = ''; // נקה את התוכן הקודם
