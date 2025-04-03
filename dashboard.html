@@ -419,7 +419,7 @@
                         <p><b>מאייר:</b> <span class="math-inline">\{bookData\.illustrator \|\| 'לא צוין'\}</p\>
 <p\><b\>מספר עותקים זמינים\:</b\>
 <span id\="availableCopies"\></span>{bookData.availableCopies}</span></p>
-<div class="copies-buttons">
+                        <div class="copies-buttons">
                             <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
                             <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
                         </div>
@@ -763,7 +763,7 @@
 
         async function loadBorrowedBooks() {
             const borrowedBooksList = document.getElementById('borrowedBooksList');
-            borrowedBooksList.innerHTML = 'טוען רשימת השאלות...';
+            borrowedBooksList.innerHTML = 'טוען רשימת ההשאלות...';
             const now = new Date();
 
             try {
@@ -792,9 +792,7 @@
                 });
 
                 html = overdue.join('') + dueSoon.join('') + notDue.join('');
-                borrowedBooksList.innerHTML = html || 'אין ספרים מושאלים כרגע.';
-
-            } catch (error) {
+                borrowedBooksList.innerHTML = html || 'אין ספרים מושאלים כרגע.';} catch (error) {
                 console.error('שגיאה בטעינת רשימת הספרים המושאלים:', error);
                 borrowedBooksList.innerHTML = `אירעה שגיאה בטעינת רשימת ההשאלות: ${error.message}`;
             }
