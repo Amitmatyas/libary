@@ -379,11 +379,11 @@
                         <p><b>מחבר:</b> ${bookData.author}</p>
                         <p><b>מאייר:</b> <span class="math-inline">\{bookData\.illustrator \|\| 'לא צוין'\}</p\>
 <p\><b\>כמות עותקים\:</b\> <span id\="totalCopies"\></span>{bookData.copies}</span></p>
-                        <p><b>עותקים זמינים:</b> <span id="availableCopies">${bookData.availableCopies}</span></p>
-                        <p><b>מספר סידורי:</b> <span class="math-inline">\{bookData\.serialNumber\}</p\>
-<button onclick\="updateCopies\('</span>{bookId}', 1)">הוסף עותק</button>
-                        <button onclick="updateCopies('${bookId}', -1)">
-הורד עותק</button>
+                        <p
+                        ><b>עותקים זמינים:</b> <span id="availableCopies">${bookData.availableCopies}</span></p>
+                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
+                        <button onclick="updateCopies('${bookId}', 1)">הוסף עותק</button>
+                        <button onclick="updateCopies('${bookId}', -1)">הורד עותק</button>
                         <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
                         <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
                         <p class="error-message" id="updateCopiesError" style="display:none;"></p>
