@@ -161,7 +161,7 @@
 <body>
     <header>
         <div class="logo-placeholder">
-            </div>
+        </div>
         <h1>פתרונות ספרייה טיטוס</h1>
         <nav>
             <ul>
@@ -190,26 +190,26 @@
             </div>
         </div>
         <div id="contentArea" style="margin-top: 20px;">
-            </div>
+        </div>
     </div>
 
     <footer>
         <p>&copy; 2025 פתרונות ספרייה טיטוס</p>
     </footer>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
-          apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
-          authDomain: "liabry.firebaseapp.com",
-          projectId: "liabry",
-          storageBucket: "liabry.firebasestorage.app",
-          messagingSenderId: "1044753248505",
-          appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
-          measurementId: "G-1GSLD867H5"
+            apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
+            authDomain: "liabry.firebaseapp.com",
+            projectId: "liabry",
+            storageBucket: "liabry.firebasestorage.app",
+            messagingSenderId: "1044753248505",
+            appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
+            measurementId: "G-1GSLD867H5"
         };
 
         // Initialize Firebase
@@ -237,6 +237,7 @@
                     break;
                 case 'manageInventory':
                     contentArea.innerHTML = '<h2>ניהול מלאי ספרים</h2><p>כאן יוצג ממשק ניהול המלאי.</p>';
+                    // כאן נצטרך להוסיף את הקוד לטעינת והצגת הספרים
                     break;
                 case 'addBook':
                     contentArea.innerHTML = `
@@ -302,6 +303,7 @@
         }
 
         async function handleAddBookSubmit(event) {
+            console.log('handleAddBookSubmit הופעלה');
             event.preventDefault();
             const bookName = document.getElementById('bookName').value;
             const author = document.getElementById('author').value;
@@ -313,20 +315,40 @@
             successMessage.style.display = 'none';
             errorMessage.style.display = 'none';
 
+            console.log('שם הספר:', bookName);
+            console.log('מחבר:', author);
+            console.log('מאייר:', illustrator);
+            console.log('עותקים:', copies);
+
+            if (!bookName || !author || isNaN(copies) || copies < 1) {
+                errorMessage.textContent = 'אנא מלאו את כל השדות הנדרשים בצורה תקינה.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // --- יצירת מספר סידורי ייחודי בן 7 ספרות ---
+            const serialNumber = Math.floor(1000000 + Math.random() * 9000000).toString();
+            console.log('מספר סידורי שנוצר:', serialNumber);
+
+            const bookData = {
+                name: bookName,
+                author: author,
+                illustrator: illustrator,
+                copies: copies,
+                availableCopies: copies,
+                serialNumber: serialNumber // הוספת המספר הסידורי לנתונים
+            };
+
+            console.log('הנתונים לפני שליחה ל-Firestore:', bookData);
+
             try {
-                const docRef = await firestore.collection('books').add({
-                    name: bookName,
-                    author: author,
-                    illustrator: illustrator,
-                    copies: copies,
-                    availableCopies: copies
-                });
+                const docRef = await firestore.collection('books').add(bookData);
                 console.log('ספר נוסף עם ID: ', docRef.id);
                 successMessage.style.display = 'block';
                 document.getElementById('addBookForm').reset();
             } catch (error) {
                 console.error('שגיאה בהוספת הספר: ', error);
-                errorMessage.textContent = 'אירעה שגיאה בהוספת הספר.';
+                errorMessage.textContent = 'אירעה שגיאה בהוספת הספר: ' + error.message;
                 errorMessage.style.display = 'block';
             }
         }
@@ -345,6 +367,12 @@
             successMessage.style.display = 'none';
             errorMessage.style.display = 'none';
 
+            if (!firstName || !lastName || !phone || !address || !id) {
+                errorMessage.textContent = 'אנא מלאו את כל השדות הנדרשים.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
             try {
                 const docRef = await firestore.collection('clients').add({
                     firstName: firstName,
@@ -359,7 +387,7 @@
                 document.getElementById('addClientForm').reset();
             } catch (error) {
                 console.error('שגיאה בהוספת הלקוח: ', error);
-                errorMessage.textContent = 'אירעה שגיאה בהוספת הלקוח.';
+                errorMessage.textContent = 'אירעה שגיאה בהוספת הלקוח: ' + error.message;
                 errorMessage.style.display = 'block';
             }
         }
