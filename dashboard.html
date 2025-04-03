@@ -351,10 +351,10 @@
                     return;
                 }
 
-                let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th><th>מחבר</th><th>עותקים זמינים</th></tr></thead><tbody>';
+                let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
                 snapshot.forEach(doc => {
                     const bookData = doc.data();
-                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{bookData.name}</td><td><span class="math-inline">\{bookData\.author\}</td\><td\></span>{bookData.availableCopies}</td></tr>`;
+                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{bookData.name}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 contentArea.innerHTML = html;
@@ -377,12 +377,15 @@
                         <h2>פרטי ספר</h2>
                         <p><b>שם הספר:</b> ${bookData.name}</p>
                         <p><b>מחבר:</b> ${bookData.author}</p>
-                        <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
-                        <p><b>מספר עותקים:</b> ${bookData.copies}</p>
-                        <p><b>עותקים זמינים:</b> ${bookData.availableCopies}</p>
-                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
-                        <button onclick="loadManageInventory()">חזרה לניהול מלא
-                        י</button>
+                        <p><b>מאייר:</b> <span class="math-inline">\{bookData\.illustrator \|\| 'לא צוין'\}</p\>
+<p\><b\>כמות עותקים\:</b\> <span id\="totalCopies"\></span>{bookData.copies}</span></p>
+                        <p><b>עותקים זמינים:</b> <span id="availableCopies">${bookData.availableCopies}</span></p>
+                        <p><b>מספר סידורי:</b> <span class="math-inline">\{bookData\.serialNumber\}</p\>
+<button onclick\="updateCopies\('</span>{bookId}', 1)">הוסף עותק</button>
+                        <button onclick="updateCopies('${bookId}', -1)">הורד עותק</button>
+                        <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
+<p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
+                        <p class="error-message" id="updateCopiesError" style="display:none;"></p>
                     `;
                 } else {
                     contentArea.innerHTML = '<p>הספר לא נמצא.</p>';
@@ -390,6 +393,45 @@
             } catch (error) {
                 console.error('שגיאה בטעינת פרטי הספר:', error);
                 contentArea.innerHTML = `<p>אירעה שגיאה בטעינת פרטי הספר: ${error.message}</p>`;
+            }
+        }
+
+        async function updateCopies(bookId, change) {
+            const totalCopiesSpan = document.getElementById('totalCopies');
+            const availableCopiesSpan = document.getElementById('availableCopies');
+            const updateCopiesSuccess = document.getElementById('updateCopiesSuccess');
+            const updateCopiesError = document.getElementById('updateCopiesError');
+            updateCopiesSuccess.style.display = 'none';
+            updateCopiesError.style.display = 'none';
+
+            try {
+                const bookRef = firestore.collection('books').doc(bookId);
+                await firestore.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(bookRef);
+                    if (!doc.exists) {
+                        throw "הספר לא קיים!";
+                    }
+                    const currentTotal = doc.data().copies;
+                    const currentAvailable = doc.data().availableCopies;
+                    const newTotal = currentTotal + change;
+                    const newAvailable = currentAvailable + change;
+
+                    if (newTotal < 0) {
+                        throw "לא ניתן להוריד את כמות העותקים מתחת ל-0.";
+                    }
+                    if (newAvailable < 0) {
+                        throw "לא ניתן להוריד את כמות העותקים הזמינים מתחת ל-0.";
+                    }
+
+                    transaction.update(bookRef, { copies: newTotal, availableCopies: newAvailable });
+                    totalCopiesSpan.textContent = newTotal;
+                    availableCopiesSpan.textContent = newAvailable;
+                    updateCopiesSuccess.style.display = 'block';
+                });
+            } catch (error) {
+                console.error('שגיאה בעדכון עותקים:', error);
+                updateCopiesError.textContent = `שגיאה בעדכון העותקים: ${error}`;
+                updateCopiesError.style.display = 'block';
             }
         }
 
