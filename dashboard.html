@@ -68,16 +68,16 @@
             margin-bottom: 20px;
             text-align: center;
         }
-        /* סגנונות עבור טופס הוספת ספר */
-        #addBookForm label {
+        /* סגנונות עבור טפסים */
+        #contentArea form label {
             display: block;
             margin-bottom: 8px;
             color: #7f8c8d;
             font-size: 16px;
             text-align: right;
         }
-        #addBookForm input[type="text"],
-        #addBookForm input[type="number"] {
+        #contentArea form input[type="text"],
+        #contentArea form input[type="number"] {
             width: calc(100% - 22px);
             padding: 12px;
             border: 1px solid #d1d8e0;
@@ -86,40 +86,7 @@
             font-size: 16px;
             margin-bottom: 15px;
         }
-        #addBookForm button {
-            background-color: #27ae60;
-            color: white;
-            padding: 14px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: background-color 0.3s ease;
-            width: 100%;
-        }
-        #addBookForm button:hover {
-            background-color: #219653;
-        }
-        /* סגנונות עבור טופס הוספת לקוח */
-        #addClientForm label {
-            display: block;
-            margin-bottom: 8px;
-            color: #7f8c8d;
-            font-size: 16px;
-            text-align: right;
-        }
-        #addClientForm input[type="text"],
-        #addClientForm input[type="email"],
-        #addClientForm input[type="tel"] {
-            width: calc(100% - 22px);
-            padding: 12px;
-            border: 1px solid #d1d8e0;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-        #addClientForm button {
+        #contentArea form button {
             background-color: #3498db;
             color: white;
             padding: 14px 24px;
@@ -129,10 +96,12 @@
             font-size: 18px;
             transition: background-color 0.3s ease;
             width: 100%;
+            margin-top: 15px;
         }
-        #addClientForm button:hover {
+        #contentArea form button:hover {
             background-color: #2980b9;
         }
+        /* סגנונות כלליים */
         #contentArea > h2 {
             text-align: right;
             margin-bottom: 20px;
@@ -156,7 +125,7 @@
             margin-top: 15px;
             text-align: center;
         }
-        /* סגנונות עבור טבלת ניהול מלאי */
+        /* סגנונות עבור טבלאות */
         #contentArea table {
             width: 100%;
             border-collapse: collapse;
@@ -174,26 +143,12 @@
             background-color: #f5f5f5;
             cursor: pointer;
         }
-        /* סגנונות עבור פרטי ספר */
+        /* סגנונות עבור פרטים */
         #contentArea h2 + p {
             margin-bottom: 10px;
         }
         #contentArea h2 + p > b {
             font-weight: bold;
-        }
-        #contentArea button {
-            background-color: #3498db;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 15px;
-            transition: background-color 0.3s ease;
-        }
-        #contentArea button:hover {
-            background-color: #2980b9;
         }
         .copies-buttons {
             margin-top: 10px;
@@ -201,44 +156,77 @@
         .copies-buttons button {
             margin: 0 5px;
         }
-        /* סגנונות עבור טבלת ניהול לקוחות */
-        #contentArea #clientsTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        /* סגנונות ספציפיים להשאלה */
+        #borrowBookForm {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
         }
-        #contentArea #clientsTable th, #contentArea #clientsTable td {
-            border: 1px solid #ddd;
-            padding: 8px;
+        #borrowBookForm > div {
             text-align: right;
         }
-        #contentArea #clientsTable th {
-            background-color: #f2f2f2;
+        .borrow-details {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
         }
-        #contentArea #clientsTable tr:hover {
-            background-color: #f5f5f5;
-            cursor: pointer;
+        .borrow-details h3 {
+            text-align: right;
+            color: #3498db;
+            margin-top: 0;
         }
-        /* סגנונות עבור פרטי לקוח */
-        #contentArea #clientDetailsContainer h2 + p {
-            margin-bottom: 10px;
+        .borrow-details p {
+            margin-bottom: 5px;
         }
-        #contentArea #clientDetailsContainer h2 + p > b {
+        .borrow-actions button {
+            margin: 10px 5px;
+        }
+        .overdue {
+            color: red;
             font-weight: bold;
         }
-        #contentArea #clientDetailsContainer button {
-            background-color: #3498db;
+        #borrowedBooksList > div {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #borrowedBooksList > div:hover {
+            background-color: #f5f5f5;
+        }
+        .borrowed-book-details {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        .borrowed-book-actions button {
+            margin: 10px 5px;
+        }
+        #searchBorrowedBooks input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            border: 1px solid #d1d8e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #searchBorrowedBooks button {
+            background-color: #e67e22;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            margin-top: 15px;
             transition: background-color 0.3s ease;
         }
-        #contentArea #clientDetailsContainer button:hover {
-            background-color: #2980b9;
+        #searchBorrowedBooks button:hover {
+            background-color: #d35400;
         }
     </style>
 </head>
@@ -271,6 +259,9 @@
             </div>
             <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('manageClients'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
                 <h3>ניהול לקוחות</h3>
+            </div>
+            <div class="dashboard-option" onclick="if (typeof loadContent === 'function') { loadContent('borrowedBooks'); } else { console.error('הפונקציה loadContent לא הוגדרה.'); }">
+                <h3>ספרים מושאלים</h3>
             </div>
         </div>
         <div id="contentArea" style="margin-top: 20px;">
@@ -317,7 +308,7 @@
 
             switch (option) {
                 case 'borrow':
-                    contentArea.innerHTML = '<h2>השאלת ספרים</h2><p>כאן יוצג ממשק השאלת הספרים.</p>';
+                    loadBorrowBookForm();
                     break;
                 case 'manageInventory':
                     loadManageInventory();
@@ -379,6 +370,9 @@
                 case 'manageClients':
                     loadManageClients();
                     break;
+                case 'borrowedBooks':
+                    loadBorrowedBooksSection();
+                    break;
                 default:
                     contentArea.innerHTML = '<p>בחר אפשרות מהתפריט.</p>';
                     break;
@@ -398,16 +392,16 @@
 
                 let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
                 snapshot.forEach(doc => {
-                    const bookData = doc.data
-();
-                    html += `<tr onclick="showBookDetails('${doc.id}')"><td>${bookData.name}</td></tr>`;
+                    const bookData = doc.data();
+                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{bookData.name}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 contentArea.innerHTML = html;
 
             } catch (error) {
                 console.error('שגיאה בטעינת מלאי הספרים:', error);
-                contentArea.innerHTML = `<h2>ניהול מלאי ספרים</h2><p>אירעה שגיאה בטעינת המלאי: ${error.message}</p>`;
+                contentArea.innerHTML = `<h2>ניהול מלאי ספרים</h2><p>אירעה ש
+שגיאה בטעינת המלאי: ${error.message}</p>`;
             }
         }
 
@@ -611,9 +605,174 @@
             }
         }
 
-        // טען תוכן ברירת מחדל בעמוד הטעינה (אופציונלי)
-        loadContent('manageInventory');
+        async function loadBorrowBookForm() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2>השאלת ספר</h2>
+                <form id="borrowBookForm">
+                    <div>
+                        <label for="serialNumber">מספר סידורי של הספר:</label>
+                        <input type="text" id="serialNumber" required>
+                    </div>
+                    <div>
+                        <label for="clientId">ת"ז של הלקוח:</label>
+                        <input type="text" id="clientId" required>
+                    </div>
+                    <button type="button" onclick="checkBorrowDetails()">בדוק פרטים</button>
+                    <p class="error-message" id="borrowError" style="display:none;"></p>
+                    <div id="borrowDetailsArea" class="borrow-details" style="display:none;">
+                        <h3>פרטי ספר</h3>
+                        <p><b>שם הספר:</b> <span id="borrowBookName"></span></p>
+                        <p><b>מחבר:</b> <span id="borrowBookAuthor"></span></p>
+                        <h3>פרטי לקוח</h3>
+                        <p><b>שם מלא:</b> <span id="borrowClientName"></span></p>
+                        <p><b>ת"ז:</b> <span id="borrowClientId"></span></p>
+                        <div class="borrow-actions">
+                            <button type="button" onclick="confirmBorrow()">הפרטים נכונים - השאל ספר</button>
+                            <button type="button" onclick="loadBorrowBookForm()">הפרטים לא נכונים - נסה שוב</button>
+                        </div>
+                    </div>
+                    <p class="success-message" id="borrowSuccess" style="display:none;">הספר הושאל בהצלחה!</p>
+                </form>
+            `;
+        }
 
-    </script>
-</body>
-</html>
+        async function checkBorrowDetails() {
+            const serialNumber = document.getElementById('serialNumber').value;
+            const clientId = document.getElementById('clientId').value;
+            const borrowError = document.getElementById('borrowError');
+            const borrowDetailsArea = document.getElementById('borrowDetailsArea');
+            const borrowBookName = document.getElementById('borrowBookName');
+            const borrowBookAuthor = document.getElementById('borrowBookAuthor');
+            const borrowClientName = document.getElementById('borrowClientName');
+            const borrowClientIdDisplay = document.getElementById('borrowClientId');
+
+            borrowError.style.display = 'none';
+            borrowDetailsArea.style.display = 'none';
+
+            try {
+                const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
+                const clientDoc = await firestore.collection('clients').where('id', '==', clientId).limit(1).get();
+
+                if (bookQuery.empty) {
+                    borrowError.textContent = 'ספר עם מספר סידורי זה לא נמצא.';
+                    borrowError.style.display = 'block';
+                    return;
+                }
+
+                if (clientDoc.empty) {
+                    borrowError.textContent = 'לקוח עם ת"ז זה לא נמצא.';
+                    borrowError.style.display = 'block';
+                    return;
+                }
+
+                const bookData = bookQuery.docs[0].data();
+                const clientData = clientDoc.docs[0].data();
+
+                if (bookData.availableCopies <= 0) {
+                    borrowError.textContent = 'אין עותקים זמינים של ספר זה.';
+                    borrowError.style.display = 'block';
+                    return;
+                }
+
+                borrowBookName.textContent = bookData.name;
+                borrowBookAuthor.textContent = bookData.author;
+                borrowClientName.textContent = `${clientData.firstName} ${clientData.lastName}`;
+                borrowClientIdDisplay.textContent = clientData.id;
+                borrowDetailsArea.style.display = 'grid'; // Show the details area
+            } catch (error) {
+                console.error('שגיאה בבדיקת פרטי השאלה:', error);
+                borrowError.textContent = `אירעה שגיאה: ${error.message}`;
+                borrowError.style.display = 'block';
+            }
+        }
+
+        async function confirmBorrow() {
+            const serialNumber = document.getElementById('serialNumber').value;
+            const clientId = document.getElementById('clientId').value;
+            const borrowError = document.getElementById('borrowError');
+            const borrowSuccess = document.getElementById('borrowSuccess');
+
+            borrowError.style.display = 'none';
+            borrowSuccess.style.display = 'none';
+
+            try {
+                const bookQuery = await firestore.collection('books').where('serialNumber', '==', serialNumber).limit(1).get();
+                const clientQuery = await firestore.collection('clients').where('id', '==', clientId).limit(1).get();
+
+                if (bookQuery.empty || clientQuery.empty) {
+                    borrowError.textContent = 'אחד הפרטים שהוזנו אינו תקין. אנא נסה שוב.';
+                    borrowError.style.display = 'block';
+                    return;
+                }
+
+                const bookDoc = bookQuery.docs[0];
+                const clientDoc = clientQuery.docs[0];
+                const bookData = bookDoc.data();
+                const clientData = clientDoc.data();
+
+                if (bookData.availableCopies <= 0) {
+                    borrowError.textContent = 'אין עותקים זמינים של ספר זה.';
+                    borrowError.style.display = 'block';
+                    return;
+                }
+
+                const borrowDate = new Date();
+                const returnDate = new Date();
+                returnDate.setDate(borrowDate.getDate() + 14); // שבועיים
+
+                const borrowData = {
+                    bookId: bookDoc.id,
+                    bookName: bookData.name,
+                    clientId: clientDoc.id,
+                    clientName: `${clientData.firstName} ${clientData.lastName}`,
+                    borrowDate: firebase.firestore.Timestamp.fromDate(borrowDate),
+                    returnDate: firebase.firestore.Timestamp.fromDate(returnDate),
+                    returned: false // סטטוס החזרה
+                };
+
+                await firestore.collection('borrowed').add(borrowData);
+
+                // עדכן את מספר העותקים הזמינים בספר
+                await firestore.collection('books').doc(bookDoc.id).update({
+                    availableCopies: bookData.availableCopies - 1
+                });
+
+                borrowSuccess.style.display = 'block';
+                loadBorrowBookForm(); // נקה את הטופס לאחר השאלה מוצלחת
+
+            } catch (error) {
+                console.error('שגיאה בהשאלת הספר:', error);
+                borrowError.textContent = `אירעה שגיאה בהשאלת הספר: ${error.message}`;
+                borrowError.style.display = 'block';
+            }
+        }
+
+        async function loadBorrowedBooksSection() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2>ספרים מושאלים</h2>
+                <div id="searchBorrowedBooks">
+                    <input type="text" id="searchClientId" placeholder="חפש לפי ת\"ז לקוח">
+                    <button onclick="searchBorrowedBooksByClientId()">חפש</button>
+                </div>
+                <div id="borrowedBooksList">טוען רשימת השאלות...</div>
+                <div id="borrowedBookDetailsArea"></div>
+            `;
+            loadBorrowedBooks();
+        }
+
+        async function loadBorrowedBooks() {
+            const borrowedBooksList = document.getElementById('borrowedBooksList');
+            borrowedBooksList.innerHTML = 'טוען רשימת השאלות...';
+            const now = new Date();
+
+            try {
+                const snapshot = await firestore.collection('borrowed').where('returned', '==', false).orderBy('returnDate').get();
+                let html = '';
+                const overdue = [];
+                const dueSoon = [];
+                const notDue = [];
+
+                snapshot.forEach(doc => {
+                    const borrowData = doc.data
