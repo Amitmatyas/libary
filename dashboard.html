@@ -288,7 +288,7 @@
                         <h2>הוספת ספר חדש</h2>
                         <form id="addBookForm">
                             <label for="bookName">שם הספר:</label>
-                            <input type="text" id="bookName" name="bookName" required>
+                            <input type="text" id="bookName" name="name" required>
 
                             <label for="author">כותב:</label>
                             <input type="text" id="author" name="author" required>
@@ -360,7 +360,7 @@
                 let html = '<h2>ניהול מלאי ספרים</h2><table><thead><tr><th>שם הספר</th></tr></thead><tbody>';
                 snapshot.forEach(doc => {
                     const bookData = doc.data();
-                    html += `<tr onclick="showBookDetails('<span class="math-inline">\{doc\.id\}'\)"\><td\></span>{name}</td></tr>`;
+                    html += `<tr onclick="showBookDetails('${doc.id}')"><td>${bookData.name}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 contentArea.innerHTML = html;
@@ -381,16 +381,11 @@
                     const bookData = doc.data();
                     contentArea.innerHTML = `
                         <h2>פרטי ספר</h2>
-                        <p><b>שם הספר:</b> ${name}</p>
+                        <p><b>שם הספר:</b> ${bookData.name}</p>
                         <p><b>מחבר:</b> ${bookData.author}</p>
                         <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
                         <p><b>מספר עותקים זמינים:</b>
-<span id="availableCopies">${bookData.availableCopies}</span></p>
-                        <div class="copies-buttons">
-                            <button onclick="updateCopies('${doc.id}', 1)">הוסף עותק</button>
-                            <button onclick="updateCopies('${doc.id}', -1)">הורד עותק</button>
-                        </div>
-                        <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
+<p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
                         <p><b>המשאילים הנוכחיים:</b> בקרוב יתווסף פיצ'ר זה</p>
                         <button onclick="loadManageInventory()">חזרה לניהול מלאי</button>
                         <p class="success-message" id="updateCopiesSuccess" style="display:none;">העותקים עודכנו בהצלחה!</p>
