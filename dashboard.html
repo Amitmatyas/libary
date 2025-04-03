@@ -290,14 +290,16 @@
         const auth = firebase.auth();
         const firestore = firebase.firestore();
 
-       function logout() {
-    auth.signOut().then(() => {
-        console.log('התנתקות בוצעה בהצלחה');
-        window.location.href = 'index.html';
-    }).catch((error) => {
-        console.error('שגיאה בהתנתקות:', error);
-        alert('אירעה שגיאה בהתנתקות.');
-    });
+import { getAuth, signOut } from "firebase/auth";
+
+function logout() {
+  const auth = getAuth();
+  signOut(auth).then(() => {
+    console.log("המשתמש התנתק בהצלחה.");
+    window.location.href = 'https://titus-libarys.vercel.app/';
+  }).catch((error) => {
+    console.error("שגיאה בהתנתקות:", error);
+  });
 }
 
         function generateSerialNumber() {
