@@ -180,9 +180,7 @@
                     // The onAuthStateChanged listener will handle fetching the library name and redirection
                 })
                 .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    console.error('שגיאה בהתחברות:', errorCode, errorMessage);
+                    console.error('שגיאה בהתחברות:', error);
                     errorMessageElement.textContent = 'שם משתמש או סיסמה שגויים.';
                 });
         });
@@ -205,6 +203,8 @@
                 })
                 .catch((error) => {
                     console.error('שגיאה בשמירת שם הספרייה:', error);
+                    console.error('קוד שגיאה:', error.code);
+                    console.error('הודעת שגיאה מפורטת:', error.message);
                     libraryNameErrorMessage.textContent = 'אירעה שגיאה בשמירת שם הספרייה. אנא נסה שוב.';
                 });
             } else {
