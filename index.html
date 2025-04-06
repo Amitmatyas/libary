@@ -92,7 +92,7 @@
             </div>
             <div id="libraryNameInputContainer" class="form-group">
                 <label for="libraryName">שם הספרייה:</label>
-                <input type="text" id="libraryName" name="libraryName" required>
+                <input type="text" id="libraryName" name="libraryName">
             </div>
             <button type="submit">התחבר</button>
             <p class="error-message" id="loginError" style="display:none;"></p>
@@ -137,7 +137,7 @@
                     const user = userCredential.user;
                     console.log('התחברת בהצלחה!', user);
 
-                    firestore.collection('users').doc(user.uid).get()
+                    firestore.collection('admins').doc(user.uid).get()
                         .then((doc) => {
                             if (doc.exists && doc.data().libraryName) {
                                 // Library name exists, redirect to dashboard
@@ -154,6 +154,7 @@
                                 loginError.style.display = 'none';
 
                                 if (libraryNameInputContainer && libraryNameInput) {
+                                    libraryNameInput.required = true;
                                     libraryNameInputContainer.style.display = 'block';
                                     setTimeout(() => {
                                         libraryNameInput.focus();
@@ -197,7 +198,7 @@
             const loginSuccess = document.getElementById('loginSuccess');
 
             if (libraryName && user) {
-                firestore.collection('users').doc(user.uid).set({ libraryName: libraryName }, { merge: true })
+                firestore.collection('admins').doc(user.uid).set({ libraryName: libraryName }, { merge: true })
                     .then(() => {
                         localStorage.setItem('libraryName', libraryName);
                         window.location.href = 'dashboard.html';
