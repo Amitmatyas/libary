@@ -125,6 +125,7 @@
         const loginSuccess = document.getElementById('loginSuccess');
         const libraryNameInputContainer = document.getElementById('libraryNameInputContainer');
         const libraryNameInput = document.getElementById('libraryName');
+        let isFirstLogin = false;
 
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -136,7 +137,6 @@
                     const user = userCredential.user;
                     console.log('התחברת בהצלחה!', user);
 
-                    // Check if the user has a library name stored
                     firestore.collection('users').doc(user.uid).get()
                         .then((doc) => {
                             if (doc.exists && doc.data().libraryName) {
@@ -144,37 +144,19 @@
                                 loginSuccess.textContent = 'התחברת בהצלחה! Redirecting...';
                                 loginSuccess.style.display = 'block';
                                 loginError.style.display = 'none';
-                                localStorage.setItem('libraryName', doc.data().libraryName); // Store in local storage
+                                localStorage.setItem('libraryName', doc.data().libraryName);
                                 window.location.href = 'dashboard.html';
                             } else {
                                 // First login, show input for library name
+                                isFirstLogin = true;
                                 loginSuccess.textContent = 'התחברת בהצלחה! אנא הזן את שם הספרייה.';
                                 loginSuccess.style.display = 'block';
                                 loginError.style.display = 'none';
                                 libraryNameInputContainer.style.display = 'block';
-                                // Change button text and action
+                                libraryNameInput.focus();
+                                // Change button text and action for saving library name
                                 loginForm.querySelector('button[type="submit"]').textContent = 'שמור והמשך';
-                                loginForm.onsubmit = (e) => {
-                                    e.preventDefault();
-                                    const libraryName = libraryNameInput.value;
-                                    if (libraryName) {
-                                        firestore.collection('users').doc(user.uid).set({ libraryName: libraryName })
-                                            .then(() => {
-                                                localStorage.setItem('libraryName', libraryName); // Store in local storage
-                                                window.location.href = 'dashboard.html';
-                                            })
-                                            .catch((error) => {
-                                                console.error('שגיאה בשמירת שם הספרייה:', error);
-                                                loginError.textContent = 'שגיאה בשמירת שם הספרייה: ' + error.message;
-                                                loginError.style.display = 'block';
-                                                loginSuccess.style.display = 'none';
-                                            });
-                                    } else {
-                                        loginError.textContent = 'יש להזין את שם הספרייה.';
-                                        loginError.style.display = 'block';
-                                        loginSuccess.style.display = 'none';
-                                    }
-                                };
+                                loginForm.onsubmit = handleSaveLibraryName;
                             }
                         })
                         .catch((error) => {
@@ -191,11 +173,37 @@
                     loginError.textContent = 'שגיאה בהתחברות: ' + errorMessage;
                     loginError.style.display = 'block';
                     loginSuccess.style.display = 'none';
-                    libraryNameInputContainer.style.display = 'none'; // Ensure it's hidden on login failure
-                    loginForm.querySelector('button[type="submit"]').textContent = 'התחבר'; // Reset button text
-                    loginForm.onsubmit = loginForm.originalSubmit; // Reset submit action
+                    libraryNameInputContainer.style.display = 'none';
+                    loginForm.querySelector('button[type="submit"]').textContent = 'התחבר';
+                    loginForm.onsubmit = loginForm.originalSubmit;
                 });
         });
+
+        function handleSaveLibraryName(e) {
+            e.preventDefault();
+            const libraryName = libraryNameInput.value;
+            const user = auth.currentUser;
+            const loginError = document.getElementById('loginError');
+            const loginSuccess = document.getElementById('loginSuccess');
+
+            if (libraryName && user) {
+                firestore.collection('users').doc(user.uid).set({ libraryName: libraryName })
+                    .then(() => {
+                        localStorage.setItem('libraryName', libraryName);
+                        window.location.href = 'dashboard.html';
+                    })
+                    .catch((error) => {
+                        console.error('שגיאה בשמירת שם הספרייה:', error);
+                        loginError.textContent = 'שגיאה בשמירת שם הספרייה: ' + error.message;
+                        loginError.style.display = 'block';
+                        loginSuccess.style.display = 'none';
+                    });
+            } else {
+                loginError.textContent = 'יש להזין את שם הספרייה.';
+                loginError.style.display = 'block';
+                loginSuccess.style.display = 'none';
+            }
+        }
 
         // Store the original submit function
         loginForm.originalSubmit = loginForm.onsubmit;
