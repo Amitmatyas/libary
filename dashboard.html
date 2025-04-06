@@ -119,7 +119,6 @@
     <header>
         <div class="logo-placeholder"></div>
         <span class="library-name" id="libraryName"></span>
-        <button class="logout-button" onclick="logout()">התנתקות</button>
     </header>
 
     <div style="display: flex; flex-grow: 1;">
@@ -129,6 +128,7 @@
             <div class="sidebar-option" id="manageSystemOption">ניהול מערכת</div>
             <div class="sidebar-option" id="borrowBookOption">השאלת ספר</div>
             <div class="sidebar-option" id="unreturnedBooksOption">ספרים שלא הוחזרו</div>
+            <div class="sidebar-option" id="logoutOption">התנתקות</div>
         </div>
         <div class="content" id="contentArea">
             <h2>ברוכים הבאים ללוח הבקרה</h2>
@@ -145,6 +145,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script type="module">
         import { getAuth, signOut } from "firebase/auth";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, where, query, Timestamp } from "firebase/firestore";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -160,18 +161,18 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const firestore = firebase.firestore(app);
+        const db = getFirestore(app);
 
         const libraryNamePlaceholder = document.getElementById('libraryNamePlaceholder');
         const libraryNameElement = document.getElementById('libraryName');
         const storedLibraryName = localStorage.getItem('libraryName');
         const contentArea = document.getElementById('contentArea');
+        const logoutOption = document.getElementById('logoutOption');
 
         if (storedLibraryName) {
             libraryNamePlaceholder.textContent = storedLibraryName;
             libraryNameElement.textContent = storedLibraryName;
         } else {
-            // Handle the case where library name is not in local storage
             window.location.href = 'index.html';
         }
 
@@ -186,7 +187,7 @@
         }
 
         function loadContent(option) {
-            contentArea.innerHTML = ''; // Clear previous content
+            contentArea.innerHTML = '';
             const titleElement = document.createElement('h2');
             titleElement.style.fontFamily = "'Heebo Black', sans-serif";
             titleElement.style.fontWeight = '900';
@@ -226,845 +227,843 @@
             }
         }
 
+        function generateSerialNumber() {
+            const min = 1000000;
+            const max = 9999999;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function loadAddClientForm() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת לקוחות</h2>
+                <form id="addClientForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <label for="fullName" style="text-align: right; font-family: 'Heebo', sans-serif;">שם מלא:</label>
+                    <input type="text" id="fullName" name="fullName" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="id" style="text-align: right; font-family: 'Heebo', sans-serif;">ת"ז:</label>
+                    <input type="text" id="id" name="id" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="address" style="text-align: right; font-family: 'Heebo', sans-serif;">כתובת מלאה:</label>
+                    <input type="text" id="address" name="address" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="email" style="text-align: right; font-family: 'Heebo', sans-serif;">דואר אלקטרוני:</label>
+                    <input type="email" id="email" name="email" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="phone" style="text-align: right; font-family: 'Heebo', sans-serif;">מספר טלפון:</label>
+                    <input type="tel" id="phone" name="phone" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף לקוח</button>
+                    <div id="addClientStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
+                </form>
+            `;
+            const addClientForm = document.getElementById('addClientForm');
+            addClientForm.addEventListener('submit', handleAddClientSubmit);
+        }
+
+        async function handleAddClientSubmit(event) {
+            event.preventDefault();
+            const fullName = event.target.fullName.value;
+            const id = event.target.id.value;
+            const address = event.target.address.value;
+            const email = event.target.email.value;
+            const phone = event.target.phone.value;
+            const addClientStatus = document.getElementById('addClientStatus');
+
+            addClientStatus.textContent = 'שומר לקוח...';
+
+            try {
+                const docRef = await addDoc(collection(db, "clients"), {
+                    fullName: fullName,
+                    id: id,
+                    address: address,
+                    email: email,
+                    phone: phone
+                });
+                console.log("לקוח נוסף עם ID: ", docRef.id);
+                addClientStatus.textContent = 'הלקוח נוסף בהצלחה!';
+                event.target.reset();
+            } catch (e) {
+                console.error("שגיאה בהוספת לקוח: ", e);
+                addClientStatus.textContent = 'שגיאה בהוספת הלקוח.';
+            }
+        }
+
+        function loadAddBookForm() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת ספרים</h2>
+                <form id="addBookForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <label for="name" style="text-align: right; font-family: 'Heebo', sans-serif;">שם הספר:</label>
+                    <input type="text" id="name" name="name" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="image" style="text-align: right; font-family: 'Heebo', sans-serif;">תמונה (לא חובה):</label>
+                    <input type="file" id="image" name="image" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="author" style="text-align: right; font-family: 'Heebo', sans-serif;">מחבר:</label>
+                    <input type="text" id="author" name="author" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="illustrator" style="text-align: right; font-family: 'Heebo', sans-serif;">מאייר:</label>
+                    <input type="text" id="illustrator" name="illustrator" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="copies" style="text-align: right; font-family: 'Heebo', sans-serif;">כמות עותקים:</label>
+                    <input type="number" id="copies" name="copies" min="1" value="1" required<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><span id="libraryNamePlaceholder"></span> - לוח בקרה</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@900&display=swap'); /* Heebo Black */
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column; /* כדי שהפוטר יהיה למטה */
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background-color: #34495e;
+            border-radius: 5px;
+            margin-left: 20px;
+        }
+
+        .library-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .logout-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .logout-button:hover {
+            background-color: #34495e;
+        }
+
+        .sidebar {
+            background-color: #34495e;
+            color: white;
+            width: 250px;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-option {
+            padding: 15px 20px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            width: 100%;
+            text-align: right;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        .sidebar-option:hover {
+            background-color: #2c3e50;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 30px;
+            background-color: white;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: right;
+            font-family: 'Heebo Black', sans-serif;
+            font-weight: 900;
+            font-size: 2em;
+        }
+
+        footer {
+            background-color: #f0f2f5;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+            border-top: 1px solid #d1d8e0;
+        }
+
+        footer p {
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-placeholder"></div>
+        <span class="library-name" id="libraryName"></span>
+    </header>
+
+    <div style="display: flex; flex-grow: 1;">
+        <div class="sidebar">
+            <div class="sidebar-option" id="addClientOption">הוספת לקוחות</div>
+            <div class="sidebar-option" id="addBookOption">הוספת ספרים</div>
+            <div class="sidebar-option" id="manageSystemOption">ניהול מערכת</div>
+            <div class="sidebar-option" id="borrowBookOption">השאלת ספר</div>
+            <div class="sidebar-option" id="unreturnedBooksOption">ספרים שלא הוחזרו</div>
+            <div class="sidebar-option" id="logoutOption">התנתקות</div>
+        </div>
+        <div class="content" id="contentArea">
+            <h2>ברוכים הבאים ללוח הבקרה</h2>
+            <p style="text-align: right; font-family: 'Heebo', sans-serif;">אנא בחר אפשרות מהתפריט הצדדי כדי להתחיל.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>טיטוס - פתרונות ספרייה</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script type="module">
+        import { getAuth, signOut } from "firebase/auth";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, where, query, Timestamp } from "firebase/firestore";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
+            authDomain: "liabry.firebaseapp.com",
+            projectId: "liabry",
+            storageBucket: "liabry.firebasestorage.app",
+            messagingSenderId: "1044753248505",
+            appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
+            measurementId: "G-1GSLD867H5"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const libraryNamePlaceholder = document.getElementById('libraryNamePlaceholder');
+        const libraryNameElement = document.getElementById('libraryName');
+        const storedLibraryName = localStorage.getItem('libraryName');
+        const contentArea = document.getElementById('contentArea');
+        const logoutOption = document.getElementById('logoutOption');
+
+        if (storedLibraryName) {
+            libraryNamePlaceholder.textContent = storedLibraryName;
+            libraryNameElement.textContent = storedLibraryName;
+        } else {
+            window.location.href = 'index.html';
+        }
+
+        function logout() {
+            signOut(auth).then(() => {
+                console.log("המשתמש התנתק בהצלחה.");
+                localStorage.removeItem('libraryName');
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error("שגיאה בהתנתקות:", error);
+            });
+        }
+
+        function loadContent(option) {
+            contentArea.innerHTML = '';
+            const titleElement = document.createElement('h2');
+            titleElement.style.fontFamily = "'Heebo Black', sans-serif";
+            titleElement.style.fontWeight = '900';
+            titleElement.style.fontSize = '2em';
+            titleElement.style.textAlign = 'right';
+            contentArea.appendChild(titleElement);
+
+            switch (option) {
+                case 'addClient':
+                    titleElement.textContent = 'הוספת לקוחות';
+                    loadAddClientForm();
+                    break;
+                case 'addBook':
+                    titleElement.textContent = 'הוספת ספרים';
+                    loadAddBookForm();
+                    break;
+                case 'manageSystem':
+                    titleElement.textContent = 'ניהול מערכת';
+                    loadManageSystem();
+                    break;
+                case 'borrowBook':
+                    titleElement.textContent = 'השאלת ספר';
+                    loadBorrowBookForm();
+                    break;
+                case 'unreturnedBooks':
+                    titleElement.textContent = 'ספרים שלא הוחזרו';
+                    loadUnreturnedBooks();
+                    break;
+                default:
+                    titleElement.textContent = 'ברוכים הבאים ללוח הבקרה';
+                    const welcomeText = document.createElement('p');
+                    welcomeText.style.textAlign = 'right';
+                    welcomeText.style.fontFamily = "'Heebo', sans-serif";
+                    welcomeText.textContent = 'אנא בחר אפשרות מהתפריט הצדדי כדי להתחיל.';
+                    contentArea.appendChild(welcomeText);
+                    break;
+            }
+        }
+
+        function generateSerialNumber() {
+            const min = 1000000;
+            const max = 9999999;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function loadAddClientForm() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת לקוחות</h2>
+                <form id="addClientForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <label for="fullName" style="text-align: right; font-family: 'Heebo', sans-serif;">שם מלא:</label>
+                    <input type="text" id="fullName" name="fullName" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="id" style="text-align: right; font-family: 'Heebo', sans-serif;">ת"ז:</label>
+                    <input type="text" id="id" name="id" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="address" style="text-align: right; font-family: 'Heebo', sans-serif;">כתובת מלאה:</label>
+                    <input type="text" id="address" name="address" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="email" style="text-align: right; font-family: 'Heebo', sans-serif;">דואר אלקטרוני:</label>
+                    <input type="email" id="email" name="email" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="phone" style="text-align: right; font-family: 'Heebo', sans-serif;">מספר טלפון:</label>
+                    <input type="tel" id="phone" name="phone" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף לקוח</button>
+                    <div id="addClientStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
+                </form>
+            `;
+            const addClientForm = document.getElementById('addClientForm');
+            addClientForm.addEventListener('submit', handleAddClientSubmit);
+        }
+
+        async function handleAddClientSubmit(event) {
+            event.preventDefault();
+            const fullName = event.target.fullName.value;
+            const id = event.target.id.value;
+            const address = event.target.address.value;
+            const email = event.target.email.value;
+            const phone = event.target.phone.value;
+            const addClientStatus = document.getElementById('addClientStatus');
+
+            addClientStatus.textContent = 'שומר לקוח...';
+
+            try {
+                const docRef = await addDoc(collection(db, "clients"), {
+                    fullName: fullName,
+                    id: id,
+                    address: address,
+                    email: email,
+                    phone: phone
+                });
+                console.log("לקוח נוסף עם ID: ", docRef.id);
+                addClientStatus.textContent = 'הלקוח נוסף בהצלחה!';
+                event.target.reset();
+            } catch (e) {
+                console.error("שגיאה בהוספת לקוח: ", e);
+                addClientStatus.textContent = 'שגיאה בהוספת הלקוח.';
+            }
+        }
+
+        function loadAddBookForm() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת ספרים</h2>
+                <form id="addBookForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <label for="name" style="text-align: right; font-family: 'Heebo', sans-serif;">שם הספר:</label>
+                    <input type="text" id="name" name="name" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="image" style="text-align: right; font-family: 'Heebo', sans-serif;">תמונה (לא חובה):</label>
+                    <input type="file" id="image" name="image" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="author" style="text-align: right; font-family: 'Heebo', sans-serif;">מחבר:</label>
+                    <input type="text" id="author" name="author" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="illustrator" style="text-align: right; font-family: 'Heebo', sans-serif;">מאייר:</label>
+                    <input type="text" id="illustrator" name="illustrator" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="copies" style="text-align: right; font-family: 'Heebo', sans-serif;">כמות עותקים:</label>
+                    <input type="number" id="copies" name="copies" min="1" value="1" requiredstyle="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף ספר</button>
+                    <div id="addBookStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
+                </form>
+            `;
+            const addBookForm = document.getElementById('addBookForm');
+            addBookForm.addEventListener('submit', handleAddBookSubmit);
+        }
+
+        async function handleAddBookSubmit(event) {
+            event.preventDefault();
+            const name = event.target.name.value;
+            const author = event.target.author.value;
+            const illustrator = event.target.illustrator.value;
+            const copies = parseInt(event.target.copies.value);
+            const addBookStatus = document.getElementById('addBookStatus');
+
+            if (isNaN(copies) || copies < 1) {
+                addBookStatus.textContent = 'כמות העותקים חייבת להיות מספר חיובי.';
+                return;
+            }
+
+            addBookStatus.textContent = 'שומר ספר...';
+            const serialNumber = generateSerialNumber();
+
+            try {
+                const docRef = await addDoc(collection(db, "books"), {
+                    name: name,
+                    author: author,
+                    illustrator: illustrator,
+                    copies: copies,
+                    availableCopies: copies,
+                    serialNumber: serialNumber
+                });
+                console.log("ספר נוסף עם ID: ", docRef.id, " ומספר סידורי: ", serialNumber);
+                addBookStatus.textContent = `הספר נוסף בהצלחה! מספר סידורי: ${serialNumber}`;
+                event.target.reset();
+            } catch (e) {
+                console.error("שגיאה בהוספת ספר: ", e);
+                addBookStatus.textContent = 'שגיאה בהוספת הספר.';
+            }
+        }
+
+        function loadManageSystem() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">ניהול מערכת</h2>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 20px;">
+                    <div>
+                        <label for="searchId" style="text-align: right; font-family: 'Heebo', sans-serif; margin-left: 10px;">הזן ת"ז של לקוח / מספר סידורי של ספר:</label>
+                        <input type="text" id="searchId" style="width: 250px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+                        <button onclick="handleSearch()" style="padding: 8px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">חפש</button>
+                    </div>
+                    <div id="searchResults" style="text-align: right; font-family: 'Heebo', sans-serif;"></div>
+                </div>
+            `;
+        }
+
+        async function handleSearch() {
+            const searchId = document.getElementById('searchId').value.trim();
+            const searchResultsDiv = document.getElementById('searchResults');
+            searchResultsDiv.innerHTML = 'מחפש...';
+
+            if (!searchId) {
+                searchResultsDiv.textContent = 'יש להזין ת"ז לקוח או מספר סידורי ספר.';
+                return;
+            }
+
+            // Try searching for a client by ID
+            const clientQuery = query(collection(db, "clients"), where("id", "==", searchId));
+            const clientSnapshot = await getDocs(clientQuery);
+
+            if (!clientSnapshot.empty) {
+                const clientDoc = clientSnapshot.docs[0];
+                loadClientDetails(clientDoc.id, clientDoc.data());
+                return;
+            }
+
+            // Try searching for a book by serial number
+            const bookQuery = query(collection(db, "books"), where("serialNumber", "==", searchId));
+            const bookSnapshot = await getDocs(bookQuery);
+
+            if (!bookSnapshot.empty) {
+                const bookDoc = bookSnapshot.docs[0];
+                loadBookDetails(bookDoc.id, bookDoc.data());
+                return;
+            }
+
+            searchResultsDiv.textContent = 'לא נמצאו תוצאות עבור מזהה זה.';
+        }
+
+        async function loadClientDetails(clientId, clientData) {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי לקוח</h2>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
+                    <p><b>שם מלא:</b> ${clientData.fullName}</p>
+                    <p><b>ת"ז:</b> ${clientData.id}</p>
+                    <p><b>כתובת:</b> ${clientData.address}</p>
+                    <p><b>דואר אלקטרוני:</b> ${clientData.email || 'לא צוין'}</p>
+                    <p><b>מספר טלפון:</b> ${clientData.phone}</p>
+                    <h3>ספרים מושאלים</h3>
+                    <div id="borrowedBooksClient">טוען ספרים מושאלים...</div>
+                </div>
+            `;
+            loadBorrowedBooksForClient(clientId);
+        }
+
+        async function loadBorrowedBooksForClient(clientId) {
+            const borrowedBooksClientDiv = document.getElementById('borrowedBooksClient');
+            borrowedBooksClientDiv.innerHTML = '';
+            const borrowedQuery = query(collection(db, "borrowed"), where("clientId", "==", clientId));
+            const borrowedSnapshot = await getDocs(borrowedQuery);
+
+            if (borrowedSnapshot.empty) {
+                borrowedBooksClientDiv.textContent = 'אין ספרים מושאלים ללקוח זה.';
+                return;
+            }
+
+            let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
+            borrowedSnapshot.forEach(doc => {
+                const borrowData = doc.data();
+                const returnDate = borrowData.returnDate.toDate();
+                const now = new Date();
+                const isOverdue = returnDate < now && !borrowData.returned;
+                const bookDetails = `שם הספר: ${borrowData.bookName}, תאריך השאלה: ${borrowData.borrowDate.toDate().toLocaleDateString()}, תאריך החזרה: ${returnDate.toLocaleDateString()}`;
+                html += `<li style="margin-bottom: 5px;">
+                            <span style="${isOverdue ? 'color: red;' : ''}">${borrowData.bookName}</span>
+                            <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי השאלה</button>
+                            ${!borrowData.returned ? `<button onclick="returnBook('<span class="math-inline">\{doc\.id\}', '</span>{borrowData.bookId}', '<span class="math-inline">\{borrowData\.bookName\}'\)" style\="margin\-right\: 10px; padding\: 5px 8px; background\-color\: \#5cb85c; color\: white; border\: none; border\-radius\: 4px; cursor\: pointer; font\-size\: 0\.8em; font\-family\: 'Heebo', sans\-serif;"\>החזר ספר</button\>
+<button onclick\="extendReturnDate\('</span>{doc.id}', '${returnDate.toISOString()}')" style="padding: 5px 8px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">הארך בשבועיים</button>` : '<span style="color: green; margin-right: 10px;">הוחזר</span>'}
+                        </li>`;
+            });
+            html += '</ul>';
+            borrowedBooksClientDiv.innerHTML = html;
+        }
+
+        async function showBorrowDetails(borrowId) {
+            const borrowDoc = await getDoc(doc(db, "borrowed", borrowId));
+            if (borrowDoc.exists()) {
+                const borrowData = borrowDoc.data();
+                const bookDoc = await getDoc(doc(db, "books", borrowData.bookId));
+                const clientDoc = await getDoc(doc(db, "clients", borrowData.clientId));
+                let bookDetailsHtml = bookDoc.exists() ? `<p><b>שם הספר:</b> ${bookDoc.data().name}</p><p><b>מחבר:</b> ${bookDoc.data().author}</p>` : '<p>פרטי הספר לא זמינים.</p>';
+                let clientDetailsHtml = clientDoc.exists() ? `<p><b>שם הלקוח:</b> ${clientDoc.data().fullName}</p><p><b>ת"ז:</b> ${clientDoc.data().id}</p>` : '<p>פרטי הלקוח לא זמינים.</p>';
+
+                contentArea.innerHTML = `
+                    <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי השאלה</h2>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
+                        <h3>פרטי ספר מושאל</h3>
+                        ${bookDetailsHtml}
+                        <h3>פרטי לקוח</h3>
+                        ${clientDetailsHtml}
+                        <p><b>תאריך השאלה:</b> ${borrowData.borrowDate.toDate().toLocaleDateString()}</p>
+                        <p><b>תאריך החזרה מתוכנן:</b> ${borrowData.returnDate.toDate().toLocaleDateString()}</p>
+                        ${!borrowData.returned ? `<button onclick="returnBook('<span class="math-inline">\{borrowDoc\.id\}', '</span>{borrowData.bookId}', '<span class="math-inline">\{borrowData\.bookName\}'\)" style\="padding\: 10px 15px; background\-color\: \#5cb85c; color\: white; border\: none; border\-radius\: 4px; cursor\: pointer; font\-family\: 'Heebo', sans\-serif;"\>החזר ספר</button\>
+<button onclick\="extendReturnDate\('</span>{borrowDoc.id}', '${borrowData.returnDate.toDate().toISOString()}')" style="padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הארך בשבועיים</button>` : '<p style="color: green;">הספר הוחזר.</p>'}
+                    </div>
+                `;
+            } else {
+                contentArea.innerHTML = '<p style="text-align: right; font-family: \'Heebo\', sans-serif;">פרטי ההשאלה לא נמצאו.</p>';
+            }
+        }
+
+        async function returnBook(borrowId, bookId, bookName) {
+            if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
+                try {
+                    await updateDoc(doc(db, "borrowed", borrowId), {
+                        returned: true,
+                        actualReturnDate: Timestamp.fromDate(new Date())
+                    });
+                    const bookRef = doc(db, "books", bookId);
+                    const bookSnap = await getDoc(bookRef);
+                    if (bookSnap.exists()) {
+                        await updateDoc(bookRef, {
+                            availableCopies: bookSnap.data().availableCopies + 1
+                        });
+                    }
+                    alert(`הספר "${bookName}" סומן כהוחזר.`);
+                    loadManageSystem(); // Refresh management view
+                } catch (error) {
+                    console.error("שגיאה בסימון הספר כהוחזר: ", error);
+                    alert("שגיאה בסימון הספר כהוחזר.");
+                }
+            }
+        }
+
+        async function extendReturnDate(borrowId, currentReturnDateISO) {
+            const currentReturnDate = new Date(currentReturnDateISO);
+            const newReturnDate = new Date(currentReturnDate);
+            newReturnDate.setDate(currentReturnDate.getDate() + 14);
+
+            if (confirm(`האם להאריך את תאריך ההחזרה ל-${newReturnDate.toLocaleDateString()}?`)) {
+                try {
+                    await updateDoc(doc(db, "borrowed", borrowId), {
+                        returnDate: Timestamp.fromDate(newReturnDate)
+                    });
+                    alert(`תאריך ההחזרה הוארך ל-${newReturnDate.toLocaleDateString()}.`);
+                    loadManageSystem(); // Refresh management view
+                } catch (error) {
+                    console.error("שגיאה בהארכת תאריך ההחזרה: ", error);
+                    alert("שגיאה בהארכת תאריך ההחזרה.");
+                }
+            }
+        }
+
+        async function loadBookDetails(bookId, bookData) {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי ספר</h2>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
+                    <p><b>שם הספר:</b> ${bookData.name}</p>
+                    <p><b>מחבר:</b> ${bookData.author}</p>
+                    <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
+                    <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
+                    <p><b>כמות עותקים:</b> ${bookData.copies}</p>
+                    <p><b>עותקים זמינים:</b> ${bookData.availableCopies}</p>
+                    <h3>היסטוריית השאלות</h3>
+                    <div id="borrowHistoryBook">טוען היסטוריית השאלות...</div>
+                    <h3>ניהול מלאי</h3>
+                    <div>
+                        <label for="inventoryChange" style="text-align: right; margin-left: 10px;">הוספה/הורדה:</label>
+                        <input type="number" id="inventoryChange" value="0" style="width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+                        <button onclick="updateInventory('${bookId}')" style="padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">עדכן מלאי</button>
+                        <div id="inventoryStatus" style="text-align: right; margin-top: 5px; font-size: 0.9em;"></div>
+                    </div>
+                </div>
+            `;
+            loadBorrowHistoryForBook(bookId);
+        }
+
+        async function loadBorrowHistoryForBook(bookId) {
+            const borrowHistoryBookDiv = document.getElementById('borrowHistoryBook');
+            borrowHistoryBookDiv.innerHTML = '';
+            const borrowedQuery = query(collection(db, "borrowed"), where("bookId", "==", bookId));
+            const borrowedSnapshot = await getDocs(borrowedQuery);
+
+            if (borrowedSnapshot.empty) {
+                borrowHistoryBookDiv.textContent = 'ספר זה מעולם לא הושאל.';
+                return;
+            }
+
+            let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
+            borrowedSnapshot.forEach(doc => {
+                const borrowData = doc.data();
+                const returnDate = borrowData.returnDate.toDate();
+                const now = new Date();
+                const isOverdue = returnDate < now && !borrowData.returned;
+                html += `<li style="margin-bottom: 5px;">
+                            <span style="${isOverdue ? 'color: red;' : ''}">${borrowData.clientName}</span> - ${borrowData.borrowDate.toDate().toLocaleDateString()} עד ${returnDate.toLocaleDateString()}
+                            ${borrowData.returned ? '<span style="color: green; margin-right: 10px;">(הוחזר)</span>' : ''}
+                        </li>`;
+            });
+            html += '</ul>';
+            borrowHistoryBookDiv.innerHTML = html;
+        }
+        async function updateInventory(bookId) {
+            const inventoryChange = parseInt(document.getElementById('inventoryChange').value);
+            const inventoryStatusDiv = document.getElementById('inventoryStatus');
+            inventoryStatusDiv.textContent = 'מעדכן מלאי...';
+
+            if (isNaN(inventoryChange)) {
+                inventoryStatusDiv.textContent = 'יש להזין מספר תקין.';
+                return;
+            }
+
+            const bookRef = doc(db, "books", bookId);
+            const bookSnap = await getDoc(bookRef);
+
+            if (bookSnap.exists()) {
+                const currentCopies = bookSnap.data().copies;
+                const newCopies = currentCopies + inventoryChange;
+                if (newCopies >= bookSnap.data().availableCopies && newCopies >= 0) {
+                    await updateDoc(bookRef, {
+                        copies: newCopies
+                    });
+                    inventoryStatusDiv.textContent = 'המלאי עודכן בהצלחה.';
+                    loadBookDetails(bookId, bookSnap.data()); // Refresh book details
+                } else if (newCopies < 0) {
+                    inventoryStatusDiv.textContent = 'כמות העותקים לא יכולה להיות שלילית.';
+                }
+                 else {
+                    inventoryStatusDiv.textContent = 'כמות העותקים החדשה קטנה מכמות העותקים הזמינה.';
+                }
+            } else {
+                inventoryStatusDiv.textContent = 'הספר לא נמצא.';
+            }
+        }
+
+        function loadBorrowBookForm() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">השאלת ספר</h2>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
+                    <label for="borrowBookSerial" style="text-align: right; margin-left: 10px;">מספר סידורי של ספר:</label>
+                    <input type="text" id="borrowBookSerial" style="width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <label for="borrowClientId" style="text-align: right; margin-left: 10px;">ת"ז של הלקוח:</label>
+                    <input type="text" id="borrowClientId" style="width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
+
+                    <button onclick="checkBorrowDetails()" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">בדוק פרטים</button>
+                    <div id="borrowDetailsArea" style="text-align: right; margin-top: 20px;"></div>
+                </div>
+            `;
+        }
+
+        async function checkBorrowDetails() {
+            const serialNumber = document.getElementById('borrowBookSerial').value.trim();
+            const clientId = document.getElementById('borrowClientId').value.trim();
+            const borrowDetailsArea = document.getElementById('borrowDetailsArea');
+            borrowDetailsArea.innerHTML = 'בודק פרטים...';
+
+            if (!serialNumber || !clientId) {
+                borrowDetailsArea.textContent = 'יש להזין מספר סידורי של ספר ות"ז של לקוח.';
+                return;
+            }
+
+            const bookQuery = query(collection(db, "books"), where("serialNumber", "==", serialNumber));
+            const bookSnapshot = await getDocs(bookQuery);
+
+            const clientQuery = query(collection(db, "clients"), where("id", "==", clientId));
+            const clientSnapshot = await getDocs(clientQuery);
+
+            if (bookSnapshot.empty) {
+                borrowDetailsArea.textContent = 'ספר עם מספר סידורי זה לא נמצא.';
+                return;
+            }
+
+            if (clientSnapshot.empty) {
+                borrowDetailsArea.textContent = 'לקוח עם ת"ז זה לא נמצא.';
+                return;
+            }
+
+            const bookDoc = bookSnapshot.docs[0];
+            const clientDoc = clientSnapshot.docs[0];
+
+            borrowDetailsArea.innerHTML = `
+                <h3 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 1.5em; text-align: right;">פרטי ספר</h3>
+                <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>שם הספר:</b> ${bookDoc.data().name}</p>
+                <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>מחבר:</b> ${bookDoc.data().author}</p>
+                <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>עותקים זמינים:</b> ${bookDoc.data().availableCopies}</p>
+
+                <h3 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 1.5em; text-align: right; margin-top: 15px;">פרטי לקוח</h3>
+                <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>שם מלא:</b> ${clientDoc.data().fullName}</p>
+                <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>ת"ז:</b> ${clientDoc.data().id}</p>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmBorrow('${bookDoc.id}', '${clientDoc.id}', '${bookDoc.data().name}', '${clientDoc.data().fullName}')" style="padding: 10px 15px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">אישור</button>
+                    <button onclick="loadBorrowBookForm()" style="padding: 10px 15px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">ביטול</button>
+                </div>
+            `;
+        }
+
+        async function confirmBorrow(bookId, clientId, bookName, clientName) {
+            const borrowDetailsArea = document.getElementById('borrowDetailsArea');
+            const bookRef = doc(db, "books", bookId);
+            const bookSnap = await getDoc(bookRef);
+
+            if (!bookSnap.exists() || bookSnap.data().availableCopies <= 0) {
+                borrowDetailsArea.textContent = 'הספר לא זמין להשאלה כרגע.';
+                return;
+            }
+
+            const now = new Date();
+            const returnDate = new Date(now);
+            returnDate.setDate(now.getDate() + 14);
+
+            try {
+                await addDoc(collection(db, "borrowed"), {
+                    bookId: bookId,
+                    clientId: clientId,
+                    bookName: bookName,
+                    clientName: clientName,
+                    borrowDate: Timestamp.fromDate(now),
+                    returnDate: Timestamp.fromDate(returnDate),
+                    returned: false
+                });
+
+                await updateDoc(bookRef, {
+                    availableCopies: bookSnap.data().availableCopies - 1
+                });
+
+                borrowDetailsArea.innerHTML = `<p style="text-align: right; font-family: 'Heebo', sans-serif; color: green;">הספר "${bookName}" הושאל בהצלחה ל-${clientName}. תאריך החזרה: ${returnDate.toLocaleDateString()}.</p>`;
+                // Optionally clear the form after successful borrow
+                document.getElementById('borrowBookSerial').value = '';
+                document.getElementById('borrowClientId').value = '';
+
+            } catch (error) {
+                console.error("שגיאה בהשאלת הספר: ", error);
+                borrowDetailsArea.textContent = 'אירעה שגיאה בהשאלת הספר.';
+            }
+        }
+
+        async function loadUnreturnedBooks() {
+            contentArea.innerHTML = `
+                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">ספרים שלא הוחזרו</h2>
+                <div id="unreturnedBooksList" style="text-align: right; font-family: 'Heebo', sans-serif;">טוען רשימת ספרים שלא הוחזרו...</div>
+            `;
+            const unreturnedBooksListDiv = document.getElementById('unreturnedBooksList');
+            unreturnedBooksListDiv.innerHTML = '';
+
+            const now = new Date();
+            const borrowedQuery = query(
+                collection(db, "borrowed"),
+                where("returned", "==", false),
+                where("returnDate", "<", Timestamp.fromDate(now))
+            );
+
+            const borrowedSnapshot = await getDocs(borrowedQuery);
+
+            if (borrowedSnapshot.empty) {
+                unreturnedBooksListDiv.textContent = 'אין ספרים שלא הוחזרו.';
+                return;
+            }
+
+            let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
+            for (const doc of borrowedSnapshot.docs) {
+                const borrowData = doc.data();
+                html += `<li style="margin-bottom: 10px; color: red;">
+                            <b>${borrowData.bookName}</b> - ${borrowData.clientName}
+                            <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי ההשאלה</button>
+                        </li>`;
+            }
+
+            const stillBorrowedQuery = query(
+                collection(db, "borrowed"),
+                where("returned", "==", false),
+                where("returnDate", ">=", Timestamp.fromDate(now))
+            );
+            const stillBorrowedSnapshot = await getDocs(stillBorrowedQuery);
+            if (!stillBorrowedSnapshot.empty) {
+                html += '<h3 style="font-family: \'Heebo Black\', sans-serif; font-weight: 900; font-size: 1.2em; text-align: right; margin-top: 15px;">ספרים שעדיין לא הוחזרו (בזמן)</h3>';
+                stillBorrowedSnapshot.forEach(doc => {
+                    const borrowData = doc.data();
+                    html += `<li style="margin-bottom: 10px;">
+                                <b>${borrowData.bookName}</b> - ${borrowData.clientName}
+                                <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי ההשאלה</button>
+                            </li>`;
+                });
+            }
+
+            html += '</ul>';
+            unreturnedBooksListDiv.innerHTML = html;
+        }
+
         // Add event listeners to sidebar options
         document.getElementById('addClientOption').addEventListener('click', () => loadContent('addClient'));
         document.getElementById('addBookOption').addEventListener('click', () => loadContent('addBook'));
         document.getElementById('manageSystemOption').addEventListener('click', () => loadContent('manageSystem'));
         document.getElementById('borrowBookOption').addEventListener('click', () => loadContent('borrowBook'));
         document.getElementById('unreturnedBooksOption').addEventListener('click', () => loadContent('unreturnedBooks'));
+        document.getElementById('logoutOption').addEventListener('click', logout);
 
         // Load default content on page load
         loadContent();
     </script>
 </body>
 </html>
-<script type="module">
-    import { getAuth, signOut } from "firebase/auth";
-    import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, where, query } from "firebase/firestore";
-
-    // Firebase configuration (הועבר מהחלק הראשון)
-    const firebaseConfig = {
-        apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
-        authDomain: "liabry.firebaseapp.com",
-        projectId: "liabry",
-        storageBucket: "liabry.firebasestorage.app",
-        messagingSenderId: "1044753248505",
-        appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
-        measurementId: "G-1GSLD867H5"
-    };
-
-    // Initialize Firebase (הועבר מהחלק הראשון)
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // DOM elements (הועברו מהחלק הראשון)
-    const libraryNamePlaceholder = document.getElementById('libraryNamePlaceholder');
-    const libraryNameElement = document.getElementById('libraryName');
-    const storedLibraryName = localStorage.getItem('libraryName');
-    const contentArea = document.getElementById('contentArea');
-
-    if (storedLibraryName) {
-        libraryNamePlaceholder.textContent = storedLibraryName;
-        libraryNameElement.textContent = storedLibraryName;
-    } else {
-        window.location.href = 'index.html';
-    }
-
-    function logout() {
-        signOut(auth).then(() => {
-            console.log("המשתמש התנתק בהצלחה.");
-            localStorage.removeItem('libraryName');
-            window.location.href = 'index.html';
-        }).catch((error) => {
-            console.error("שגיאה בהתנתקות:", error);
-        });
-    }
-
-    function loadContent(option) {
-        contentArea.innerHTML = '';
-        const titleElement = document.createElement('h2');
-        titleElement.style.fontFamily = "'Heebo Black', sans-serif";
-        titleElement.style.fontWeight = '900';
-        titleElement.style.fontSize = '2em';
-        titleElement.style.textAlign = 'right';
-        contentArea.appendChild(titleElement);
-
-        switch (option) {
-            case 'addClient':
-                titleElement.textContent = 'הוספת לקוחות';
-                loadAddClientForm();
-                break;
-            case 'addBook':
-                titleElement.textContent = 'הוספת ספרים';
-                loadAddBookForm();
-                break;
-            case 'manageSystem':
-                titleElement.textContent = 'ניהול מערכת';
-                loadManageSystem();
-                break;
-            case 'borrowBook':
-                titleElement.textContent = 'השאלת ספר';
-                loadBorrowBookForm();
-                break;
-            case 'unreturnedBooks':
-                titleElement.textContent = 'ספרים שלא הוחזרו';
-                loadUnreturnedBooks();
-                break;
-            default:
-                titleElement.textContent = 'ברוכים הבאים ללוח הבקרה';
-                const welcomeText = document.createElement('p');
-                welcomeText.style.textAlign = 'right';
-                welcomeText.style.fontFamily = "'Heebo', sans-serif";
-                welcomeText.textContent = 'אנא בחר אפשרות מהתפריט הצדדי כדי להתחיל.';
-                contentArea.appendChild(welcomeText);
-                break;
-        }
-    }
-
-    function generateSerialNumber() {
-        const min = 1000000;
-        const max = 9999999;
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function loadAddClientForm() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת לקוחות</h2>
-            <form id="addClientForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-                <label for="fullName" style="text-align: right; font-family: 'Heebo', sans-serif;">שם מלא:</label>
-                <input type="text" id="fullName" name="fullName" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="id" style="text-align: right; font-family: 'Heebo', sans-serif;">ת"ז:</label>
-                <input type="text" id="id" name="id" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="address" style="text-align: right; font-family: 'Heebo', sans-serif;">כתובת מלאה:</label>
-                <input type="text" id="address" name="address" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="email" style="text-align: right; font-family: 'Heebo', sans-serif;">דואר אלקטרוני:</label>
-                <input type="email" id="email" name="email" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="phone" style="text-align: right; font-family: 'Heebo', sans-serif;">מספר טלפון:</label>
-                <input type="tel" id="phone" name="phone" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף לקוח</button>
-                <div id="addClientStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
-            </form>
-        `;
-        const addClientForm = document.getElementById('addClientForm');
-        addClientForm.addEventListener('submit', handleAddClientSubmit);
-    }
-
-    async function handleAddClientSubmit(event) {
-        event.preventDefault();
-        const fullName = event.target.fullName.value;
-        const id = event.target.id.value;
-        const address = event.target.address.value;
-        const email = event.target.email.value;
-        const phone = event.target.phone.value;
-        const addClientStatus = document.getElementById('addClientStatus');
-
-        addClientStatus.textContent = 'שומר לקוח...';
-
-        try {
-            const docRef = await addDoc(collection(db, "clients"), {
-                fullName: fullName,
-                id: id,
-                address: address,
-                email: email,
-                phone: phone
-            });
-            console.log("לקוח נוסף עם ID: ", docRef.id);
-            addClientStatus.textContent = 'הלקוח נוסף בהצלחה!';
-            event.target.reset();
-        } catch (e) {
-            console.error("שגיאה בהוספת לקוח: ", e);
-            addClientStatus.textContent = 'שגיאה בהוספת הלקוח.';
-        }
-    }
-
-    function loadAddBookForm() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת ספרים</h2>
-            <form id="addBookForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-                <label for="name" style="text-align: right; font-family: 'Heebo', sans-serif;">שם הספר:</label>
-                <input type="text" id="name" name="name" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="image" style="text-align: right; font-family: 'Heebo', sans-serif;">תמונה (לא חובה):</label>
-                <input type="file" id="image" name="image" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="author" style="text-align: right; font-family: 'Heebo', sans-serif;">מחבר:</label>
-                <input type="text" id="author" name="author" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="illustrator" style="text-align: right; font-family: 'Heebo', sans-serif;">מאייר:</label>
-                <input type="text" id="illustrator" name="illustrator" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="copies" style="text-align: right; font-family: 'Heebo', sans-serif;">כמות עותקים:</label>
-                <input type="number" id="copies" name="copies" min="1" value="1" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף ספר</button>
-                <div id="addBookStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
-            </form>
-        `;
-        const addBookForm = document.getElementById('addBookForm');
-        addBookForm.addEventListener('submit', handleAddBookSubmit);
-    }
-
-    async function handleAddBookSubmit(event) {
-        event.preventDefault();
-        const name = event.target.name.value;
-        const author = event.target.author.value;
-        const illustrator = event.target.illustrator.value;
-        const copies = parseInt(event.target.copies.value);
-        const addBookStatus = document.getElementById('addBookStatus');
-
-        if (isNaN(copies) || copies < 1) {
-            addBookStatus.textContent = 'כמות העותקים חייבת להיות מספר חיובי.';
-            return;
-        }
-
-        addBookStatus.textContent = 'שומר ספר...';
-        const serialNumber = generateSerialNumber();
-
-        try {
-            const docRef = await addDoc(collection(db, "books"), {
-                name: name,
-                author: author,
-                illustrator: illustrator,
-                copies: copies,
-                availableCopies: copies,
-                serialNumber: serialNumber
-            });
-            console.log("ספר נוסף עם ID: ", docRef.id, " ומספר סידורי: ", serialNumber);
-            addBookStatus.textContent = `הספר נוסף בהצלחה! מספר סידורי: ${serialNumber}`;
-            event.target.reset();
-        } catch (e) {
-            console.error("שגיאה בהוספת ספר: ", e);
-            addBookStatus.textContent = 'שגיאה בהוספת הספר.';
-        }
-    }
-
-    // Event listeners for sidebar options (הועברו מהחלק הראשון)
-    document.getElementById('addClientOption').addEventListener('click', () => loadContent('addClient'));
-    document.getElementById('addBookOption').addEventListener('click', () => loadContent('addBook'));
-    document.getElementById('manageSystemOption').addEventListener('click', () => loadContent('manageSystem'));
-    document.getElementById('borrowBookOption').addEventListener('click', () => loadContent('borrowBook'));
-    document.getElementById('unreturnedBooksOption').addEventListener('click', () => loadContent('unreturnedBooks'));
-
-    // Load default content on page load (הועבר מהחלק הראשון)
-    loadContent();
-</script>
-<script type="module">
-    import { getAuth, signOut } from "firebase/auth";
-    import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, where, query, Timestamp } from "firebase/firestore";
-
-    // Firebase configuration (הועבר מהחלק הראשון)
-    const firebaseConfig = {
-        apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
-        authDomain: "liabry.firebaseapp.com",
-        projectId: "liabry",
-        storageBucket: "liabry.firebasestorage.app",
-        messagingSenderId: "1044753248505",
-        appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
-        measurementId: "G-1GSLD867H5"
-    };
-
-    // Initialize Firebase (הועבר מהחלק הראשון)
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // DOM elements (הועברו מהחלק הראשון)
-    const libraryNamePlaceholder = document.getElementById('libraryNamePlaceholder');
-    const libraryNameElement = document.getElementById('libraryName');
-    const storedLibraryName = localStorage.getItem('libraryName');
-    const contentArea = document.getElementById('contentArea');
-
-    if (storedLibraryName) {
-        libraryNamePlaceholder.textContent = storedLibraryName;
-        libraryNameElement.textContent = storedLibraryName;
-    } else {
-        window.location.href = 'index.html';
-    }
-
-    function logout() {
-        signOut(auth).then(() => {
-            console.log("המשתמש התנתק בהצלחה.");
-            localStorage.removeItem('libraryName');
-            window.location.href = 'index.html';
-        }).catch((error) => {
-            console.error("שגיאה בהתנתקות:", error);
-        });
-    }
-
-    function loadContent(option) {
-        contentArea.innerHTML = '';
-        const titleElement = document.createElement('h2');
-        titleElement.style.fontFamily = "'Heebo Black', sans-serif";
-        titleElement.style.fontWeight = '900';
-        titleElement.style.fontSize = '2em';
-        titleElement.style.textAlign = 'right';
-        contentArea.appendChild(titleElement);
-
-        switch (option) {
-            case 'addClient':
-                titleElement.textContent = 'הוספת לקוחות';
-                loadAddClientForm();
-                break;
-            case 'addBook':
-                titleElement.textContent = 'הוספת ספרים';
-                loadAddBookForm();
-                break;
-            case 'manageSystem':
-                titleElement.textContent = 'ניהול מערכת';
-                loadManageSystem();
-                break;
-            case 'borrowBook':
-                titleElement.textContent = 'השאלת ספר';
-                loadBorrowBookForm();
-                break;
-            case 'unreturnedBooks':
-                titleElement.textContent = 'ספרים שלא הוחזרו';
-                loadUnreturnedBooks();
-                break;
-            default:
-                titleElement.textContent = 'ברוכים הבאים ללוח הבקרה';
-                const welcomeText = document.createElement('p');
-                welcomeText.style.textAlign = 'right';
-                welcomeText.style.fontFamily = "'Heebo', sans-serif";
-                welcomeText.textContent = 'אנא בחר אפשרות מהתפריט הצדדי כדי להתחיל.';
-                contentArea.appendChild(welcomeText);
-                break;
-        }
-    }
-
-    function generateSerialNumber() {
-        const min = 1000000;
-        const max = 9999999;
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function loadAddClientForm() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת לקוחות</h2>
-            <form id="addClientForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-                <label for="fullName" style="text-align: right; font-family: 'Heebo', sans-serif;">שם מלא:</label>
-                <input type="text" id="fullName" name="fullName" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="id" style="text-align: right; font-family: 'Heebo', sans-serif;">ת"ז:</label>
-                <input type="text" id="id" name="id" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="address" style="text-align: right; font-family: 'Heebo', sans-serif;">כתובת מלאה:</label>
-                <input type="text" id="address" name="address" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="email" style="text-align: right; font-family: 'Heebo', sans-serif;">דואר אלקטרוני:</label>
-                <input type="email" id="email" name="email" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="phone" style="text-align: right; font-family: 'Heebo', sans-serif;">מספר טלפון:</label>
-                <input type="tel" id="phone" name="phone" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף לקוח</button>
-                <div id="addClientStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
-            </form>
-        `;
-        const addClientForm = document.getElementById('addClientForm');
-        addClientForm.addEventListener('submit', handleAddClientSubmit);
-    }
-
-    async function handleAddClientSubmit(event) {
-        event.preventDefault();
-        const fullName = event.target.fullName.value;
-        const id = event.target.id.value;
-        const address = event.target.address.value;
-        const email = event.target.email.value;
-        const phone = event.target.phone.value;
-        const addClientStatus = document.getElementById('addClientStatus');
-
-        addClientStatus.textContent = 'שומר לקוח...';
-
-        try {
-            const docRef = await addDoc(collection(db, "clients"), {
-                fullName: fullName,
-                id: id,
-                address: address,
-                email: email,
-                phone: phone
-            });
-            console.log("לקוח נוסף עם ID: ", docRef.id);
-            addClientStatus.textContent = 'הלקוח נוסף בהצלחה!';
-            event.target.reset();
-        } catch (e) {
-            console.error("שגיאה בהוספת לקוח: ", e);
-            addClientStatus.textContent = 'שגיאה בהוספת הלקוח.';
-        }
-    }
-
-    function loadAddBookForm() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">הוספת ספרים</h2>
-            <form id="addBookForm" style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
-                <label for="name" style="text-align: right; font-family: 'Heebo', sans-serif;">שם הספר:</label>
-                <input type="text" id="name" name="name" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="image" style="text-align: right; font-family: 'Heebo', sans-serif;">תמונה (לא חובה):</label>
-                <input type="file" id="image" name="image" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="author" style="text-align: right; font-family: 'Heebo', sans-serif;">מחבר:</label>
-                <input type="text" id="author" name="author" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="illustrator" style="text-align: right; font-family: 'Heebo', sans-serif;">מאייר:</label>
-                <input type="text" id="illustrator" name="illustrator" style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="copies" style="text-align: right; font-family: 'Heebo', sans-serif;">כמות עותקים:</label>
-                <input type="number" id="copies" name="copies" min="1" value="1" required style="width: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <button type="submit" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הוסף ספר</button>
-                <div id="addBookStatus" style="text-align: right; margin-top: 10px; font-family: 'Heebo', sans-serif;"></div>
-            </form>
-        `;
-        const addBookForm = document.getElementById('addBookForm');
-        addBookForm.addEventListener('submit', handleAddBookSubmit);
-    }
-
-    async function handleAddBookSubmit(event) {
-        event.preventDefault();
-        const name = event.target.name.value;
-        const author = event.target.author.value;
-        const illustrator = event.target.illustrator.value;
-        const copies = parseInt(event.target.copies.value);
-        const addBookStatus = document.getElementById('addBookStatus');
-
-        if (isNaN(copies) || copies < 1) {
-            addBookStatus.textContent = 'כמות העותקים חייבת להיות מספר חיובי.';
-            return;
-        }
-
-        addBookStatus.textContent = 'שומר ספר...';
-        const serialNumber = generateSerialNumber();
-
-        try {
-            const docRef = await addDoc(collection(db, "books"), {
-                name: name,
-                author: author,
-                illustrator: illustrator,
-                copies: copies,
-                availableCopies: copies,
-                serialNumber: serialNumber
-            });
-            console.log("ספר נוסף עם ID: ", docRef.id, " ומספר סידורי: ", serialNumber);
-            addBookStatus.textContent = `הספר נוסף בהצלחה! מספר סידורי: ${serialNumber}`;
-            event.target.reset();
-        } catch (e) {
-            console.error("שגיאה בהוספת ספר: ", e);
-            addBookStatus.textContent = 'שגיאה בהוספת הספר.';
-        }
-    }
-
-    function loadManageSystem() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">ניהול מערכת</h2>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 20px;">
-                <div>
-                    <label for="searchId" style="text-align: right; font-family: 'Heebo', sans-serif; margin-left: 10px;">הזן ת"ז של לקוח / מספר סידורי של ספר:</label>
-                    <input type="text" id="searchId" style="width: 250px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-                    <button onclick="handleSearch()" style="padding: 8px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">חפש</button>
-                </div>
-                <div id="searchResults" style="text-align: right; font-family: 'Heebo', sans-serif;"></div>
-            </div>
-        `;
-    }
-
-    async function handleSearch() {
-        const searchId = document.getElementById('searchId').value.trim();
-        const searchResultsDiv = document.getElementById('searchResults');
-        searchResultsDiv.innerHTML = 'מחפש...';
-
-        if (!searchId) {
-            searchResultsDiv.textContent = 'יש להזין ת"ז לקוח או מספר סידורי ספר.';
-            return;
-        }
-
-        // Try searching for a client by ID
-        const clientQuery = query(collection(db, "clients"), where("id", "==", searchId));
-        const clientSnapshot = await getDocs(clientQuery);
-
-        if (!clientSnapshot.empty) {
-            const clientDoc = clientSnapshot.docs[0];
-            loadClientDetails(clientDoc.id, clientDoc.data());
-            return;
-        }
-
-        // Try searching for a book by serial number
-        const bookQuery = query(collection(db, "books"), where("serialNumber", "==", searchId));
-        const bookSnapshot = await getDocs(bookQuery);
-
-        if (!bookSnapshot.empty) {
-            const bookDoc = bookSnapshot.docs[0];
-            loadBookDetails(bookDoc.id, bookDoc.data());
-            return;
-        }
-
-        searchResultsDiv.textContent = 'לא נמצאו תוצאות עבור מזהה זה.';
-    }
-
-    async function loadClientDetails(clientId, clientData) {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי לקוח</h2>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
-                <p><b>שם מלא:</b> ${clientData.fullName}</p>
-                <p><b>ת"ז:</b> ${clientData.id}</p>
-                <p><b>כתובת:</b> ${clientData.address}</p>
-                <p><b>דואר אלקטרוני:</b> ${clientData.email || 'לא צוין'}</p>
-                <p><b>מספר טלפון:</b> ${clientData.phone}</p>
-                <h3>ספרים מושאלים</h3>
-                <div id="borrowedBooksClient">טוען ספרים מושאלים...</div>
-            </div>
-        `;
-        loadBorrowedBooksForClient(clientId);
-    }
-
-    async function loadBorrowedBooksForClient(clientId) {
-        const borrowedBooksClientDiv = document.getElementById('borrowedBooksClient');
-        borrowedBooksClientDiv.innerHTML = '';
-        const borrowedQuery = query(collection(db, "borrowed"), where("clientId", "==", clientId));
-        const borrowedSnapshot = await getDocs(borrowedQuery);
-
-        if (borrowedSnapshot.empty) {
-            borrowedBooksClientDiv.textContent = 'אין ספרים מושאלים ללקוח זה.';
-            return;
-        }
-
-        let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
-        borrowedSnapshot.forEach(doc => {
-            const borrowData = doc.data();
-            const returnDate= borrowData.returnDate.toDate();
-            const now = new Date();
-            const isOverdue = returnDate < now && !borrowData.returned;
-            const bookDetails = `שם הספר: ${borrowData.bookName}, תאריך השאלה: ${borrowData.borrowDate.toDate().toLocaleDateString()}, תאריך החזרה: ${returnDate.toLocaleDateString()}`;
-            html += `<li style="margin-bottom: 5px;">
-                        <span style="<span class="math-inline">\{isOverdue ? 'color\: red;' \: ''\}"\></span>{borrowData.bookName}</span>
-                        <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי השאלה</button>
-                        ${!borrowData.returned ? `<button onclick="returnBook('${doc.id}', '${borrowData.bookId}', '${borrowData.bookName}')" style="margin-right: 10px; padding: 5px 8px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">החזר ספר</button>
-                        <button onclick="extendReturnDate('${doc.id}', '${returnDate.toISOString()}')" style="padding: 5px 8px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">הארך בשבועיים</button>` : '<span style="color: green; margin-right: 10px;">הוחזר</span>'}
-                    </li>`;
-        });
-        html += '</ul>';
-        borrowedBooksClientDiv.innerHTML = html;
-    }
-
-    async function showBorrowDetails(borrowId) {
-        const borrowDoc = await getDoc(doc(db, "borrowed", borrowId));
-        if (borrowDoc.exists()) {
-            const borrowData = borrowDoc.data();
-            const bookDoc = await getDoc(doc(db, "books", borrowData.bookId));
-            const clientDoc = await getDoc(doc(db, "clients", borrowData.clientId));
-            let bookDetailsHtml = bookDoc.exists() ? `<p><b>שם הספר:</b> ${bookDoc.data().name}</p><p><b>מחבר:</b> ${bookDoc.data().author}</p>` : '<p>פרטי הספר לא זמינים.</p>';
-            let clientDetailsHtml = clientDoc.exists() ? `<p><b>שם הלקוח:</b> ${clientDoc.data().fullName}</p><p><b>ת"ז:</b> ${clientDoc.data().id}</p>` : '<p>פרטי הלקוח לא זמינים.</p>';
-
-            contentArea.innerHTML = `
-                <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי השאלה</h2>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
-                    <h3>פרטי ספר מושאל</h3>
-                    ${bookDetailsHtml}
-                    <h3>פרטי לקוח</h3>
-                    ${clientDetailsHtml}
-                    <p><b>תאריך השאלה:</b> ${borrowData.borrowDate.toDate().toLocaleDateString()}</p>
-                    <p><b>תאריך החזרה מתוכנן:</b> ${borrowData.returnDate.toDate().toLocaleDateString()}</p>
-                    ${!borrowData.returned ? `<button onclick="returnBook('${borrowDoc.id}', '${borrowData.bookId}', '${borrowData.bookName}')" style="padding: 10px 15px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">החזר ספר</button>
-                    <button onclick="extendReturnDate('${borrowDoc.id}', '${borrowData.returnDate.toDate().toISOString()}')" style="padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">הארך בשבועיים</button>` : '<p style="color: green;">הספר הוחזר.</p>'}
-                </div>
-            `;
-        } else {
-            contentArea.innerHTML = '<p style="text-align: right; font-family: \'Heebo\', sans-serif;">פרטי ההשאלה לא נמצאו.</p>';
-        }
-    }
-
-    async function returnBook(borrowId, bookId, bookName) {
-        if (confirm(`האם אתה בטוח שספר "${bookName}" הוחזר?`)) {
-            try {
-                await updateDoc(doc(db, "borrowed", borrowId), {
-                    returned: true,
-                    actualReturnDate: Timestamp.fromDate(new Date())
-                });
-                const bookRef = doc(db, "books", bookId);
-                const bookSnap = await getDoc(bookRef);
-                if (bookSnap.exists()) {
-                    await updateDoc(bookRef, {
-                        availableCopies: bookSnap.data().availableCopies + 1
-                    });
-                }
-                alert(`הספר "${bookName}" סומן כהוחזר.`);
-                loadManageSystem(); // Refresh management view
-            } catch (error) {
-                console.error("שגיאה בסימון הספר כהוחזר: ", error);
-                alert("שגיאה בסימון הספר כהוחזר.");
-            }
-        }
-    }
-
-    async function extendReturnDate(borrowId, currentReturnDateISO) {
-        const currentReturnDate = new Date(currentReturnDateISO);
-        const newReturnDate = new Date(currentReturnDate);
-        newReturnDate.setDate(currentReturnDate.getDate() + 14);
-
-        if (confirm(`האם להאריך את תאריך ההחזרה ל-${newReturnDate.toLocaleDateString()}?`)) {
-            try {
-                await updateDoc(doc(db, "borrowed", borrowId), {
-                    returnDate: Timestamp.fromDate(newReturnDate)
-                });
-                alert(`תאריך ההחזרה הוארך ל-${newReturnDate.toLocaleDateString()}.`);
-                loadManageSystem(); // Refresh management view
-            } catch (error) {
-                console.error("שגיאה בהארכת תאריך ההחזרה: ", error);
-                alert("שגיאה בהארכת תאריך ההחזרה.");
-            }
-        }
-    }
-
-    async function loadBookDetails(bookId, bookData) {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">פרטי ספר</h2>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
-                <p><b>שם הספר:</b> ${bookData.name}</p>
-                <p><b>מחבר:</b> ${bookData.author}</p>
-                <p><b>מאייר:</b> ${bookData.illustrator || 'לא צוין'}</p>
-                <p><b>מספר סידורי:</b> ${bookData.serialNumber}</p>
-                <p><b>כמות עותקים:</b> ${bookData.copies}</p>
-                <p><b>עותקים זמינים:</b> <span class="math-inline">\{bookData\.availableCopies\}</p\>
-<h3\>היסטוריית השאלות</h3\>
-<div id\="borrowHistoryBook"\>טוען היסטוריית השאלות\.\.\.</div\>
-<h3\>ניהול מלאי</h3\>
-<div\>
-<label for\="inventoryChange" style\="text\-align\: right; margin\-left\: 10px;"\>הוספה/הורדה\:</label\>
-<input type\="number" id\="inventoryChange" value\="0" style\="width\: 80px; padding\: 5px; border\: 1px solid \#ccc; border\-radius\: 4px; text\-align\: right;"\>
-<button onclick\="updateInventory\('</span>{bookId}')" style="padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">עדכן מלאי</button>
-                    <div id="inventoryStatus" style="text-align: right; margin-top: 5px; font-size: 0.9em;"></div>
-                </div>
-            </div>
-        `;
-        loadBorrowHistoryForBook(bookId);
-    }
-
-    async function loadBorrowHistoryForBook(bookId) {
-        const borrowHistoryBookDiv = document.getElementById('borrowHistoryBook');
-        borrowHistoryBookDiv.innerHTML = '';
-        const borrowedQuery = query(collection(db, "borrowed"), where("bookId", "==", bookId));
-        const borrowedSnapshot = await getDocs(borrowedQuery);
-
-        if (borrowedSnapshot.empty) {
-            borrowHistoryBookDiv.textContent = 'ספר זה מעולם לא הושאל.';
-            return;
-        }
-
-        let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
-        borrowedSnapshot.forEach(doc => {
-            const borrowData = doc.data();
-            const returnDate = borrowData.returnDate.toDate();
-            const now = new Date();
-            const isOverdue = returnDate < now && !borrowData.returned;
-            html += `<li style="margin-bottom: 5px;">
-                        <span style="<span class="math-inline">\{isOverdue ? 'color\: red;' \: ''\}"\></span>{borrowData.clientName}</span> - ${borrowData.borrowDate.toDate().toLocaleDateString()} עד ${returnDate.toLocaleDateString()}
-                        ${borrowData.returned ? '<span style="color: green; margin-right: 10px;">(הוחזר)</span>' : ''}
-                    </li>`;
-        });
-        html += '</ul>';
-        borrowHistoryBookDiv.innerHTML = html;
-    }
-
-    async function updateInventory(bookId) {
-        const inventoryChange = parseInt(document.getElementById('inventoryChange').value);
-        const inventoryStatusDiv = document.getElementById('inventoryStatus');
-        inventoryStatusDiv.textContent = 'מעדכן מלאי...';
-
-        if (isNaN(inventoryChange)) {
-            inventoryStatusDiv.textContent = 'יש להזין מספר תקין.';
-            return;
-        }
-
-        const bookRef = doc(db, "books", bookId);
-        const bookSnap = await getDoc(bookRef);
-
-        if (bookSnap.exists()) {
-            const currentCopies = bookSnap.data().copies;
-            const newCopies = currentCopies + inventoryChange;
-            if (newCopies >= bookSnap.data().availableCopies && newCopies >= 0) {
-                await updateDoc(bookRef, {
-                    copies: newCopies
-                });
-                inventoryStatusDiv.textContent = 'המלאי עודכן בהצלחה.';
-                loadManageSystem(); // Refresh book details
-            } else if (newCopies < 0) {
-                inventoryStatusDiv.textContent = 'כמות העותקים לא יכולה להיות שלילית.';
-            }
-             else {
-                inventoryStatusDiv.textContent = 'כמות העותקים החדשה קטנה מכמות העותקים הזמינה.';
-            }
-        } else {
-            inventoryStatusDiv.textContent = 'הספר לא נמצא.';
-        }
-    }
-
-    function loadBorrowBookForm() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">השאלת ספר</h2>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-family: 'Heebo', sans-serif;">
-                <label for="borrowBookSerial" style="text-align: right; margin-left: 10px;">מספר סידורי של ספר:</label>
-                <input type="text" id="borrowBookSerial" style="width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <label for="borrowClientId" style="text-align: right; margin-left: 10px;">ת"ז של הלקוח:</label>
-                <input type="text" id="borrowClientId" style="width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: right;">
-
-                <button onclick="checkBorrowDetails()" style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">בדוק פרטים</button>
-                <div id="borrowDetailsArea" style="text-align: right; margin-top: 20px;"></div>
-            </div>
-        `;
-    }
-
-    async function checkBorrowDetails() {
-        const serialNumber = document.getElementById('borrowBookSerial').value.trim();
-        const clientId = document.getElementById('borrowClientId').value.trim();
-        const borrowDetailsArea = document.getElementById('borrowDetailsArea');
-        borrowDetailsArea.innerHTML = 'בודק פרטים...';
-
-        if (!serialNumber || !clientId) {
-            borrowDetailsArea.textContent = 'יש להזין מספר סידורי של ספר ות"ז של לקוח.';
-            return;
-        }
-
-        const bookQuery = query(collection(db, "books"), where("serialNumber", "==", serialNumber));
-        const bookSnapshot = await getDocs(bookQuery);
-
-        const clientQuery = query(collection(db, "clients"), where("id", "==", clientId));
-        const clientSnapshot = await getDocs(clientQuery);
-
-        if (bookSnapshot.empty) {
-            borrowDetailsArea.textContent = 'ספר עם מספר סידורי זה לא נמצא.';
-            return;
-        }
-
-        if (clientSnapshot.empty) {
-            borrowDetailsArea.textContent = 'לקוח עם ת"ז זה לא נמצא.';
-            return;
-        }
-
-        const bookDoc = bookSnapshot.docs[0];
-        const clientDoc = clientSnapshot.docs[0];
-
-        borrowDetailsArea.innerHTML = `
-            <h3 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 1.5em; text-align: right;">פרטי ספר</h3>
-            <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>שם הספר:</b> ${bookDoc.data().name}</p>
-            <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>מחבר:</b> ${bookDoc.data().author}</p>
-            <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>עותקים זמינים:</b> ${bookDoc.data().availableCopies}</p>
-
-            <h3 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 1.5em; text-align: right; margin-top: 15px;">פרטי לקוח</h3>
-            <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>שם מלא:</b> ${clientDoc.data().fullName}</p>
-            <p style="text-align: right; font-family: 'Heebo', sans-serif;"><b>ת"ז:</b> <span class="math-inline">\{clientDoc\.data\(\)\.id\}</p\>
-<div style\="display\: flex; justify\-content\: flex\-end; gap\: 10px; margin\-top\: 20px;"\>
-<button onclick\="confirmBorrow\('</span>{bookDoc.id}', '<span class="math-inline">\{clientDoc\.id\}', '</span>{bookDoc.data().name}', '${clientDoc.data().fullName}')" style="padding: 10px 15px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">אישור</button>
-                <button onclick="loadBorrowBookForm()" style="padding: 10px 15px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Heebo', sans-serif;">ביטול</button>
-            </div>
-        `;
-    }
-
-    async function confirmBorrow(bookId, clientId, bookName, clientName) {
-        const borrowDetailsArea = document.getElementById('borrowDetailsArea');
-        const bookRef = doc(db, "books", bookId);
-        const bookSnap = await getDoc(bookRef);
-
-        if (!bookSnap.exists() || bookSnap.data().availableCopies <= 0) {
-            borrowDetailsArea.textContent = 'הספר לא זמין להשאלה כרגע.';
-            return;
-        }
-
-        const now = new Date();
-        const returnDate = new Date(now);
-        returnDate.setDate(now.getDate() + 14);
-
-        try {
-            await addDoc(collection(db, "borrowed"), {
-                bookId: bookId,
-                clientId: clientId,
-                bookName: bookName,
-                clientName: clientName,
-                borrowDate: Timestamp.fromDate(now),
-                returnDate: Timestamp.fromDate(returnDate),
-                returned: false
-            });
-
-            await updateDoc(bookRef, {
-                availableCopies: bookSnap.data().availableCopies - 1
-            });
-
-            borrowDetailsArea.innerHTML = `<p style="text-align: right; font-family: 'Heebo', sans-serif; color: green;">הספר "${bookName}" הושאל בהצלחה ל-${clientName}. תאריך החזרה: ${returnDate.toLocaleDateString()}.</p>`;
-            // Optionally clear the form after successful borrow
-            document.getElementById('borrowBookSerial').value = '';
-            document.getElementById('borrowClientId').value = '';
-
-        } catch (error) {
-            console.error("שגיאה בהשאלת הספר: ", error);
-            borrowDetailsArea.textContent = 'אירעה שגיאה בהשאלת הספר.';
-        }
-    }
-
-    async function loadUnreturnedBooks() {
-        contentArea.innerHTML = `
-            <h2 style="font-family: 'Heebo Black', sans-serif; font-weight: 900; font-size: 2em; text-align: right;">ספרים שלא הוחזרו</h2>
-            <div id="unreturnedBooksList" style="text-align: right; font-family: 'Heebo', sans-serif;">טוען רשימת ספרים שלא הוחזרו...</div>
-        `;
-        const unreturnedBooksListDiv = document.getElementById('unreturnedBooksList');
-        unreturnedBooksListDiv.innerHTML = '';
-
-        const now = new Date();
-        const borrowedQuery = query(
-            collection(db, "borrowed"),
-            where("returned", "==", false),
-            where("returnDate", "<", Timestamp.fromDate(now))
-        );
-
-        const borrowedSnapshot = await getDocs(borrowedQuery);
-
-        if (borrowedSnapshot.empty) {
-            unreturnedBooksListDiv.textContent = 'אין ספרים שלא הוחזרו.';
-            return;
-        }
-
-        let html = '<ul style="list-style-type: none; padding: 0; text-align: right;">';
-        for (const doc of borrowedSnapshot.docs) {
-            const borrowData = doc.data();
-            html += `<li style="margin-bottom: 10px; color: red;">
-                        <b>${borrowData.bookName}</b> - ${borrowData.clientName}
-                        <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי ההשאלה</button>
-                    </li>`;
-        }
-
-        const stillBorrowedQuery = query(
-            collection(db, "borrowed"),
-            where("returned", "==", false),
-            where("returnDate", ">=", Timestamp.fromDate(now))
-        );
-        const stillBorrowedSnapshot = await getDocs(stillBorrowedQuery);
-        if (!stillBorrowedSnapshot.empty) {
-            html += '<h3 style="font-family: \'Heebo Black\', sans-serif; font-weight: 900; font-size: 1.2em; text-align: right; margin-top: 15px;">ספרים שעדיין לא הוחזרו (בזמן)</h3>';
-            stillBorrowedSnapshot.forEach(doc => {
-                const borrowData = doc.data();
-                html += `<li style="margin-bottom: 10px;">
-                            <b>${borrowData.bookName}</b> - ${borrowData.clientName}
-                            <button onclick="showBorrowDetails('${doc.id}')" style="margin-right: 10px; padding: 5px 8px; background-color: #f0ad4e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-family: 'Heebo', sans-serif;">פרטי ההשאלה</button>
-                        </li>`;
-            });
-        }
-
-        html += '</ul>';
-        unreturnedBooksListDiv.innerHTML = html;
-    }
-
-    // Event listeners for sidebar options (הועברו מהחלק הראשון)
-    document.getElementById('addClientOption').addEventListener('click', () => loadContent('addClient'));
-    document.getElementById('addBookOption').addEventListener('click', () => loadContent('addBook'));
-    document.getElementById('manageSystemOption').addEventListener('click', () => loadContent('manageSystem'));
-    document.getElementById('borrowBookOption').addEventListener('click', () => loadContent('borrowBook'));
-    document.getElementById('unreturnedBooksOption').addEventListener('click', () => loadContent('unreturnedBooks'));
-
-    // Load default content on page load (הועבר מהחלק הראשון)
-    loadContent();
-</script>
