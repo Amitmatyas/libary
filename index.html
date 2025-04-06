@@ -149,12 +149,12 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                const libraryRef = db.collection('libraries').doc(user.uid);
-                const doc = await libraryRef.get();
+                const userLibraryRef = db.collection('users').doc(user.uid);
+                const doc = await userLibraryRef.get();
 
-                if (doc.exists) {
-                    const libraryData = doc.data();
-                    setLibraryNameToTitle(libraryData.libraryName);
+                if (doc.exists && doc.data().libraryDetails && doc.data().libraryDetails.libraryName) {
+                    const libraryName = doc.data().libraryDetails.libraryName;
+                    setLibraryNameToTitle(libraryName);
                     loginForm.style.display = 'block';
                     libraryNameForm.style.display = 'none';
                 } else {
@@ -191,8 +191,10 @@
             const user = auth.currentUser;
 
             if (user) {
-                db.collection('libraries').doc(user.uid).set({
-                    libraryName: libraryName
+                db.collection('users').doc(user.uid).set({
+                    libraryDetails: {
+                        libraryName: libraryName
+                    }
                 })
                 .then(() => {
                     console.log('שם הספרייה נשמר בהצלחה!');
