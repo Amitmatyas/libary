@@ -100,10 +100,12 @@
         </form>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
@@ -116,9 +118,9 @@
         };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const firestore = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const firestore = getFirestore(app);
 
         const loginForm = document.getElementById('loginForm');
         const loginError = document.getElementById('loginError');
@@ -127,70 +129,61 @@
         const libraryNameInput = document.getElementById('libraryName');
         let isFirstLogin = false;
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = loginForm.email.value;
             const password = loginForm.password.value;
 
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log('התחברת בהצלחה!', user);
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log('התחברת בהצלחה!', user);
 
-                    firestore.collection('admins').doc(user.uid).get()
-                        .then((doc) => {
-                            if (doc.exists && doc.data().libraryName) {
-                                // Library name exists, redirect to dashboard
-                                loginSuccess.textContent = 'התחברת בהצלחה! Redirecting...';
-                                loginSuccess.style.display = 'block';
-                                loginError.style.display = 'none';
-                                localStorage.setItem('libraryName', doc.data().libraryName);
-                                window.location.href = 'dashboard.html';
-                            } else {
-                                // First login, show input for library name
-                                isFirstLogin = true;
-                                loginSuccess.textContent = 'התחברת בהצלחה! אנא הזן את שם הספרייה.';
-                                loginSuccess.style.display = 'block';
-                                loginError.style.display = 'none';
+                const userDoc = doc(firestore, 'admins', user.uid);
+                const userDocSnapshot = await getDoc(userDoc);
+                
+                if (userDocSnapshot.exists() && userDocSnapshot.data().libraryName) {
+                    // Library name exists, redirect to dashboard
+                    loginSuccess.textContent = 'התחברת בהצלחה! Redirecting...';
+                    loginSuccess.style.display = 'block';
+                    loginError.style.display = 'none';
+                    localStorage.setItem('libraryName', userDocSnapshot.data().libraryName);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    // First login, show input for library name
+                    isFirstLogin = true;
+                    loginSuccess.textContent = 'התחברת בהצלחה! אנא הזן את שם הספרייה.';
+                    loginSuccess.style.display = 'block';
+                    loginError.style.display = 'none';
 
-                                if (libraryNameInputContainer && libraryNameInput) {
-                                    libraryNameInput.required = true;
-                                    libraryNameInputContainer.style.display = 'block';
-                                    setTimeout(() => {
-                                        libraryNameInput.focus();
-                                    }, 100);
-                                    // Change button text and action for saving library name
-                                    loginForm.querySelector('button[type="submit"]').textContent = 'שמור והמשך';
-                                    loginForm.onsubmit = handleSaveLibraryName;
-                                } else {
-                                    console.error("שגיאה: אלמנטים 'libraryNameInputContainer' או 'libraryName' לא נמצאו ב-DOM.");
-                                    loginError.textContent = "אירעה שגיאה פנימית. אנא נסה שוב.";
-                                    loginError.style.display = 'block';
-                                    loginSuccess.style.display = 'none';
-                                }
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('שגיאה בבדיקת פרטי משתמש:', error);
-                            loginError.textContent = 'שגיאה בבדיקת פרטי משתמש: ' + error.message;
-                            loginError.style.display = 'block';
-                            loginSuccess.style.display = 'none';
-                        });
-                })
-                .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    console.error('שגיאה בהתחברות:', errorCode, errorMessage);
-                    loginError.textContent = 'שגיאה בהתחברות: ' + errorMessage;
-                    loginError.style.display = 'block';
-                    loginSuccess.style.display = 'none';
-                    libraryNameInputContainer.style.display = 'none';
-                    loginForm.querySelector('button[type="submit"]').textContent = 'התחבר';
-                    loginForm.onsubmit = loginForm.originalSubmit;
-                });
+                    if (libraryNameInputContainer && libraryNameInput) {
+                        libraryNameInput.required = true;
+                        libraryNameInputContainer.style.display = 'block';
+                        setTimeout(() => {
+                            libraryNameInput.focus();
+                        }, 100);
+                        // Change button text and action for saving library name
+                        loginForm.querySelector('button[type="submit"]').textContent = 'שמור והמשך';
+                        loginForm.onsubmit = handleSaveLibraryName;
+                    } else {
+                        console.error("שגיאה: אלמנטים 'libraryNameInputContainer' או 'libraryName' לא נמצאו ב-DOM.");
+                        loginError.textContent = "אירעה שגיאה פנימית. אנא נסה שוב.";
+                        loginError.style.display = 'block';
+                        loginSuccess.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('שגיאה בהתחברות:', error.code, error.message);
+                loginError.textContent = 'שגיאה בהתחברות: ' + error.message;
+                loginError.style.display = 'block';
+                loginSuccess.style.display = 'none';
+                libraryNameInputContainer.style.display = 'none';
+                loginForm.querySelector('button[type="submit"]').textContent = 'התחבר';
+                loginForm.onsubmit = loginForm.originalSubmit;
+            }
         });
 
-        function handleSaveLibraryName(e) {
+        async function handleSaveLibraryName(e) {
             e.preventDefault();
             const libraryName = libraryNameInput.value;
             const user = auth.currentUser;
@@ -198,17 +191,17 @@
             const loginSuccess = document.getElementById('loginSuccess');
 
             if (libraryName && user) {
-                firestore.collection('admins').doc(user.uid).set({ libraryName: libraryName }, { merge: true })
-                    .then(() => {
-                        localStorage.setItem('libraryName', libraryName);
-                        window.location.href = 'dashboard.html';
-                    })
-                    .catch((error) => {
-                        console.error('שגיאה בשמירת שם הספרייה:', error);
-                        loginError.textContent = 'שגיאה בשמירת שם הספרייה: ' + error.message;
-                        loginError.style.display = 'block';
-                        loginSuccess.style.display = 'none';
-                    });
+                try {
+                    const userDoc = doc(firestore, 'admins', user.uid);
+                    await setDoc(userDoc, { libraryName: libraryName }, { merge: true });
+                    localStorage.setItem('libraryName', libraryName);
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    console.error('שגיאה בשמירת שם הספרייה:', error);
+                    loginError.textContent = 'שגיאה בשמירת שם הספרייה: ' + error.message;
+                    loginError.style.display = 'block';
+                    loginSuccess.style.display = 'none';
+                }
             } else {
                 loginError.textContent = 'יש להזין את שם הספרייה.';
                 loginError.style.display = 'block';
