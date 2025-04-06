@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פתרונות ספרייה טיטוס - התחברות</title>
+    <title id="pageTitle">פתרונות ספרייה טיטוס - התחברות</title>
     <style>
-        /* (אותם סגנונות CSS כמו קודם) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -39,7 +38,8 @@
             font-size: 16px;
         }
         input[type="email"],
-        input[type="password"] {
+        input[type="password"],
+        input[type="text"] {
             width: calc(100% - 22px);
             padding: 12px;
             border: 1px solid #d1d8e0;
@@ -66,11 +66,29 @@
             margin-top: 15px;
             text-align: center;
         }
+        #libraryNameForm {
+            display: none; /* Initially hidden */
+            margin-top: 20px;
+        }
+        #libraryNameForm h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        #libraryNameForm .form-group {
+            margin-bottom: 15px;
+        }
+        #libraryNameSubmit {
+            background-color: #27ae60;
+        }
+        #libraryNameSubmit:hover {
+            background-color: #219653;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>פתרונות ספרייה טיטוס</h1>
+        <h1 id="libraryTitle">פתרונות ספרייה טיטוס</h1>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">אימייל:</label>
@@ -83,28 +101,72 @@
             <button type="submit">התחבר</button>
             <p class="error-message" id="errorMessage"></p>
         </form>
+
+        <div id="libraryNameForm">
+            <h2>ברוכים הבאים!</h2>
+            <p>נראה שזו הפעם הראשונה שלך. אנא הזן את שם הספרייה שלך:</p>
+            <form id="setLibraryName">
+                <div class="form-group">
+                    <label for="libraryName">שם הספרייה:</label>
+                    <input type="text" id="libraryName" name="libraryName" required>
+                </div>
+                <button type="submit" id="libraryNameSubmit">שמור</button>
+                <p class="error-message" id="libraryNameErrorMessage"></p>
+            </form>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // Your web app's Firebase configuration
         const firebaseConfig = {
-          apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
-          authDomain: "liabry.firebaseapp.com",
-          projectId: "liabry",
-          storageBucket: "liabry.firebasestorage.app",
-          messagingSenderId: "1044753248505",
-          appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
-          measurementId: "G-1GSLD867H5"
+            apiKey: "AIzaSyC-_747A2AMLul8BArL5IuLglBK0FlC4BM",
+            authDomain: "liabry.firebaseapp.com",
+            projectId: "liabry",
+            storageBucket: "liabry.firebasestorage.app",
+            messagingSenderId: "1044753248505",
+            appId: "1:1044753248505:web:fe64ef88d4e7e9b9c4b228",
+            measurementId: "G-1GSLD867H5"
         };
 
-        // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore();
         const errorMessageElement = document.getElementById('errorMessage');
         const loginForm = document.getElementById('loginForm');
+        const libraryNameForm = document.getElementById('libraryNameForm');
+        const setLibraryNameForm = document.getElementById('setLibraryName');
+        const libraryTitleElement = document.getElementById('libraryTitle');
+        const pageTitleElement = document.getElementById('pageTitle');
+        const libraryNameErrorMessage = document.getElementById('libraryNameErrorMessage');
+
+        function setLibraryNameToTitle(libraryName) {
+            libraryTitleElement.textContent = libraryName;
+            pageTitleElement.textContent = `${libraryName} - התחברות`;
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const libraryRef = db.collection('libraries').doc(user.uid);
+                const doc = await libraryRef.get();
+
+                if (doc.exists) {
+                    const libraryData = doc.data();
+                    setLibraryNameToTitle(libraryData.libraryName);
+                    loginForm.style.display = 'block';
+                    libraryNameForm.style.display = 'none';
+                } else {
+                    loginForm.style.display = 'none';
+                    libraryNameForm.style.display = 'block';
+                }
+            } else {
+                setLibraryNameToTitle('פתרונות ספרייה טיטוס');
+                loginForm.style.display = 'block';
+                libraryNameForm.style.display = 'none';
+            }
+        });
 
         loginForm.addEventListener('submit', function(event) {
             event.preventDefault();
@@ -113,18 +175,42 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // User signed in successfully
                     const user = userCredential.user;
                     console.log('התחברות מוצלחת!', user);
-                    window.location.href = 'dashboard.html'; // Redirect to dashboard
+                    // The onAuthStateChanged listener will handle fetching the library name and redirection
                 })
                 .catch((error) => {
-                    // Handle errors
                     const errorCode = error.code;
                     const errorMessage = error.message;
                     console.error('שגיאה בהתחברות:', errorCode, errorMessage);
                     errorMessageElement.textContent = 'שם משתמש או סיסמה שגויים.';
                 });
+        });
+
+        setLibraryNameForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const libraryName = document.getElementById('libraryName').value;
+            const user = auth.currentUser;
+
+            if (user) {
+                db.collection('libraries').doc(user.uid).set({
+                    libraryName: libraryName
+                })
+                .then(() => {
+                    console.log('שם הספרייה נשמר בהצלחה!');
+                    setLibraryNameToTitle(libraryName);
+                    libraryNameForm.style.display = 'none';
+                    loginForm.style.display = 'block';
+                    window.location.href = 'dashboard.html'; // Redirect after setting library name
+                })
+                .catch((error) => {
+                    console.error('שגיאה בשמירת שם הספרייה:', error);
+                    libraryNameErrorMessage.textContent = 'אירעה שגיאה בשמירת שם הספרייה. אנא נסה שוב.';
+                });
+            } else {
+                console.error('משתמש לא מחובר.');
+                libraryNameErrorMessage.textContent = 'משתמש לא מחובר. אנא התחבר קודם.';
+            }
         });
     </script>
 </body>
