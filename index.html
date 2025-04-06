@@ -152,11 +152,21 @@
                                 loginSuccess.textContent = 'התחברת בהצלחה! אנא הזן את שם הספרייה.';
                                 loginSuccess.style.display = 'block';
                                 loginError.style.display = 'none';
-                                libraryNameInputContainer.style.display = 'block';
-                                libraryNameInput.focus();
-                                // Change button text and action for saving library name
-                                loginForm.querySelector('button[type="submit"]').textContent = 'שמור והמשך';
-                                loginForm.onsubmit = handleSaveLibraryName;
+
+                                if (libraryNameInputContainer && libraryNameInput) {
+                                    libraryNameInputContainer.style.display = 'block';
+                                    setTimeout(() => {
+                                        libraryNameInput.focus();
+                                    }, 100);
+                                    // Change button text and action for saving library name
+                                    loginForm.querySelector('button[type="submit"]').textContent = 'שמור והמשך';
+                                    loginForm.onsubmit = handleSaveLibraryName;
+                                } else {
+                                    console.error("שגיאה: אלמנטים 'libraryNameInputContainer' או 'libraryName' לא נמצאו ב-DOM.");
+                                    loginError.textContent = "אירעה שגיאה פנימית. אנא נסה שוב.";
+                                    loginError.style.display = 'block';
+                                    loginSuccess.style.display = 'none';
+                                }
                             }
                         })
                         .catch((error) => {
