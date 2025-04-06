@@ -197,7 +197,7 @@
             const loginSuccess = document.getElementById('loginSuccess');
 
             if (libraryName && user) {
-                firestore.collection('users').doc(user.uid).set({ libraryName: libraryName })
+                firestore.collection('users').doc(user.uid).set({ libraryName: libraryName }, { merge: true })
                     .then(() => {
                         localStorage.setItem('libraryName', libraryName);
                         window.location.href = 'dashboard.html';
