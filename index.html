@@ -139,7 +139,7 @@
                 const user = userCredential.user;
                 console.log('התחברת בהצלחה!', user);
 
-                const userDoc = doc(firestore, 'admins', user.uid);
+                const userDoc = doc(firestore, 'users', user.uid);
                 const userDocSnapshot = await getDoc(userDoc);
                 
                 if (userDocSnapshot.exists() && userDocSnapshot.data().libraryName) {
@@ -192,7 +192,7 @@
 
             if (libraryName && user) {
                 try {
-                    const userDoc = doc(firestore, 'admins', user.uid);
+                    const userDoc = doc(firestore, 'users', user.uid);
                     await setDoc(userDoc, { libraryName: libraryName }, { merge: true });
                     localStorage.setItem('libraryName', libraryName);
                     window.location.href = 'dashboard.html';
